@@ -1,0 +1,39 @@
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# TinyJS & Build Artifacts
+.build/
+dist/
+*.app/
+*.zip
+
+# Native compilation intermediates
+*.o
+*.dSYM/
+
+# Editor / AI Workspace caches
+.agents/
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs & Runtime Dumps
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.system_generated/
+
+# Local Environment Variables
+.env
+.env.local
+.env.*
+!.env.example

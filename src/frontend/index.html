@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Latata.Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell compact-mode" id="appShell" data-view="top-cpu">
+    <!-- Draggable macOS Widget Header -->
+    <header class="titlebar" data-tiny-drag>
+      <div class="titlebar-left">
+        <span class="live-dot" id="liveDot" title="Połączono z backendem txiki.js"></span>
+        <span class="app-title">Latata<span class="accent">.Hub</span></span>
+      </div>
+      <div class="titlebar-actions" data-tiny-nodrag>
+        <button class="icon-btn tooltip-toggle-btn active" id="btnToggleTooltips" type="button" title="Wskazówki (Tooltipy): Włączone (kliknij, aby wyłączyć)">
+          <span class="tooltip-bulb-icon" id="tooltipToggleIcon">💡</span>
+          <span class="tooltip-toggle-text" id="tooltipToggleText">ON</span>
+        </button>
+        <button class="icon-btn icon-only" id="btnCaffeinate" type="button" title="Tryb Caffeinate: blokuj usypianie ekranu i Maca (Wył.)">
+          <span id="caffeinateIcon">☕</span>
+        </button>
+        <button class="icon-btn" id="btnPin" type="button" title="Przypnij zawsze na wierzchu (Always on Top)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+          </svg>
+          <span id="layerLabel">Przypnij</span>
+        </button>
+        <button class="icon-btn" id="btnCompact" type="button" title="Dopasowany rozmiar (356×548) / Pełna kolumna (356×760)">
+          <span id="compactLabel">Rozwiń</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tab Bar (Variant A) -->
+    <nav class="nav-tab-bar" id="mainTabBar" data-tiny-nodrag>
+      <button class="nav-tab active" type="button" data-tab="dashboard" title="Home — podsumowanie Maca, kółka i baterie">🏠 Home</button>
+      <button class="nav-tab" type="button" data-tab="procs" title="Procesy — CPU, RAM i Porty TCP">⚡ Procesy</button>
+      <button class="nav-tab" type="button" data-tab="disk" title="Dysk — pojemność, największe katalogi i pliki">💾 Dysk</button>
+      <button class="nav-tab" type="button" data-tab="cleaner" title="Cleaner — czyszczenie pamięci podręcznej i śmieci">🧹 Cleaner</button>
+      <button class="nav-tab" type="button" data-tab="network" title="Sieć — prędkość łącza i sygnał Wi-Fi">🌐 Sieć</button>
+      <button class="nav-tab" type="button" data-tab="sensors" title="Sensory — temperatury, GPU i zasilanie">🌡 Sensory</button>
+    </nav>
+
+    <!-- Subnav for Processes (CPU / RAM / Ports) — Fixed under tab bar -->
+    <div class="procs-subnav-bar" id="procsSubnav" hidden data-tiny-nodrag>
+      <button class="subnav-pill active" id="subtabCpu" type="button" data-procs-sub="top-cpu" title="Top 10 procesów obciążających procesor">💻 Procesor CPU</button>
+      <button class="subnav-pill" id="subtabRam" type="button" data-procs-sub="top-ram" title="Top 10 procesów zużywających pamięć RAM">🧠 Pamięć RAM</button>
+      <button class="subnav-pill" id="subtabPorts" type="button" data-procs-sub="dev" title="Nasłuchujące porty deweloperskie i Docker">⇄ Porty TCP (<span id="procsPortsCount">0</span>)</button>
+    </div>
+
+    <!-- Always-Visible Top Section: macOS Battery-Style 4 Rings + Live Status Strip -->
+    <section class="rings-panel" id="ringsPanel">
+      <div class="mini-hud" id="miniHudSystem">
+        <!-- CPU Ring (like macOS Battery Widget) -->
+        <div class="hud-tile active" data-jump="top-cpu" title="Kliknij, aby zobaczyć Top 10 procesów CPU">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-indigo" id="ringCpu" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+                <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudCpuPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">CPU</span>
+            <span class="hud-sub" id="hudCpuTemp">--°C</span>
+          </div>
+        </div>
+
+        <!-- RAM Ring -->
+        <div class="hud-tile" data-jump="top-ram" title="Kliknij, aby zobaczyć Top 10 procesów RAM">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringRam" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M8 11V9M16 11V9M12 11V9M2 15h20M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudRamPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">RAM</span>
+            <span class="hud-sub" id="hudRamUsed">0.0 GB</span>
+          </div>
+        </div>
+
+        <!-- GPU Ring -->
+        <div class="hud-tile" data-jump="power" title="Kliknij, aby zobaczyć GPU i Temperatury">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-amber" id="ringGpu" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudGpuPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">GPU</span>
+            <span class="hud-sub" id="hudGpuTemp">--°C</span>
+          </div>
+        </div>
+
+        <!-- Wi-Fi Ring -->
+        <div class="hud-tile" data-jump="network" title="Kliknij, aby zobaczyć Prędkość Internetu i Wi-Fi">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-sky" id="ringWifi" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudWifiPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">WI-FI</span>
+            <span class="hud-sub" id="hudWifiDbm">-- dBm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Always-Visible Battery Buttons (MacBook + Bluetooth Accessories) -->
+      <div class="mini-hud bt-hud-row" id="miniHudBattery">
+        <!-- Slot 0: MacBook Internal Battery -->
+        <div class="hud-tile bt-slot" id="btSlot0" data-jump="power" title="Bateria MacBooka — kliknij, aby otworzyć Bateria i Zasilanie">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt0" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon0">💻</div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct0">--%</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel0">MacBook</span>
+          </div>
+        </div>
+
+        <!-- Slot 1: Bluetooth Accessory 1 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot1" data-jump="power" title="Urządzenie Bluetooth #1">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt1" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon1"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct1">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel1">Bluetooth</span>
+          </div>
+        </div>
+
+        <!-- Slot 2: Bluetooth Accessory 2 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot2" data-jump="power" title="Urządzenie Bluetooth #2">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt2" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon2"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct2">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel2">Bluetooth</span>
+          </div>
+        </div>
+
+        <!-- Slot 3: Bluetooth Accessory 3 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot3" data-jump="power" title="Urządzenie Bluetooth #3">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt3" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon3"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct3">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel3">Bluetooth</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Always-Visible Disk Capacity (SSD/HDD) & System Cleaner Bar -->
+      <div class="disk-hud-bar" id="diskHudBar" data-jump="disk" title="Pojemność Dysku SSD — kliknij, aby przejść do szczegółów">
+        <div class="disk-hud-left">
+          <div class="disk-hud-top">
+            <span class="disk-hud-title">💾 <b id="hudDiskName">Macintosh HD</b></span>
+            <span class="disk-hud-cap" id="hudDiskCap">Wolne: -- GB z -- GB (--%)</span>
+          </div>
+          <div class="disk-hud-track">
+            <div class="disk-hud-fill" id="hudDiskBarFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <button class="hud-clean-btn" id="btnHudCleaner" type="button" data-jump="cleaner" title="Oczyść system ze śmieci (w stylu CCleaner / Mac Sai)">
+          🧹 <span id="hudJunkBadge">Cleaner</span>
+        </button>
+      </div>
+
+      <!-- Live Status Strip inside Widget -->
+      <div class="mini-strip">
+        <div class="mini-strip-item" data-jump="network" title="Prędkość pobierania (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-icon down">↓</span>
+          <span class="strip-val" id="stripDown">0 KB/s</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="network" title="Prędkość wysyłania (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-icon up">↑</span>
+          <span class="strip-val" id="stripUp">0 KB/s</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="network" title="Opóźnienie sieci Ping (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-muted">Ping</span>
+          <span class="strip-val" id="stripPing">--</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="power" title="Stan baterii (kliknij, aby otworzyć sensory)">
+          <span class="strip-icon batt" id="stripBattIcon">⚡</span>
+          <span class="strip-val" id="stripBatt">--%</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="disk" id="stripDiskItem" title="Pojemność dysku SSD/HDD i System Cleaner (kliknij, aby otworzyć)">
+          <span class="strip-muted">Dysk</span>
+          <span class="strip-val" id="stripDisk">--/-- GB</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="dev" id="stripPortsItem" title="Aktywne porty TCP Localhost / Dev (kliknij, aby otworzyć Port Inspector)">
+          <span class="strip-icon ports">⇄</span>
+          <span class="strip-val" id="stripPorts">0</span>
+        </div>
+      </div>
+
+      <!-- Home Live Glance & Quick Actions Widget (Rich Overview) -->
+      <div class="home-glance-panel" id="homeGlancePanel">
+        <div class="home-meta-bar">
+          <div class="home-meta-item">
+            <span class="meta-dot"></span>
+            <span class="meta-label">Mac:</span>
+            <strong id="homeMacModel">Apple Silicon</strong>
+          </div>
+          <div class="home-meta-item">
+            <span class="meta-label">Uptime:</span>
+            <strong id="homeUptime">--</strong>
+          </div>
+          <div class="home-meta-item">
+            <span class="meta-label">Sieć:</span>
+            <strong id="homeWifiSsid">--</strong>
+          </div>
+          <button class="home-meta-item home-meta-btn" id="btnHomeToggleTooltips" type="button" title="Wskazówki (Tooltipy) — kliknij, aby włączyć lub wyłączyć">
+            <span class="meta-label">Tooltipy:</span>
+            <strong id="homeTooltipsStatus">Wł.</strong>
+          </button>
+        </div>
+
+        <div class="home-chips-grid">
+          <div class="home-chip" data-jump="power" title="Sensory termiczne i temperatury — kliknij, aby otworzyć">
+            <div class="chip-title">🌡 Termika SoC</div>
+            <div class="chip-val" id="homeChipTemp">--°C</div>
+            <div class="chip-sub" id="homeChipTempSub">CPU &amp; GPU OK</div>
+          </div>
+          <div class="home-chip" data-jump="power" title="Diagnostyka baterii i zasilanie — kliknij, aby otworzyć">
+            <div class="chip-title">🔋 Bateria</div>
+            <div class="chip-val" id="homeChipBatt">--%</div>
+            <div class="chip-sub" id="homeChipBattSub">Kondycja --%</div>
+          </div>
+          <div class="home-chip" data-jump="network" title="Parametry łącza i opóźnienie — kliknij, aby otworzyć">
+            <div class="chip-title">⚡ Ping / Łącze</div>
+            <div class="chip-val" id="homeChipPing">-- ms</div>
+            <div class="chip-sub" id="homeChipNetSub">↓ 0 KB/s</div>
+          </div>
+        </div>
+
+        <div class="home-system-status-row" id="homeSysStatusRow">
+          <div class="home-sys-pill" data-jump="top-cpu" title="Poziom obciążenia systemu (Load Average 1m / 5m)">
+            <span class="sys-dot dot-cyan"></span>
+            <span class="sys-label">Load:</span>
+            <strong class="sys-val" id="homeLoadAvg">0.00 / 0.00</strong>
+          </div>
+          <div class="home-sys-pill" data-jump="top-ram" title="Użycie pliku wymiany Swap">
+            <span class="sys-dot dot-purple"></span>
+            <span class="sys-label">Swap:</span>
+            <strong class="sys-val" id="homeSwapVal">0 MB</strong>
+          </div>
+          <div class="home-sys-pill" data-jump="dev" title="Status środowiska deweloperskiego Docker">
+            <span class="sys-dot" id="homeDockerDot"></span>
+            <span class="sys-label">Docker:</span>
+            <strong class="sys-val" id="homeDockerVal">Wył.</strong>
+          </div>
+        </div>
+
+        <div class="home-actions-bar">
+          <button class="home-action-btn" id="btnHomeCleanRam" type="button" title="Szybkie czyszczenie pamięci podręcznej DNS (dscacheutil) i zwolnienie nieaktywnego RAM">
+            🧹 <span id="homeCleanRamLabel">Wyczyść RAM i DNS</span>
+          </button>
+          <button class="home-action-btn" id="btnHomeProcs" type="button" data-jump="top-cpu" title="Przejdź do pełnej listy procesów CPU i RAM">
+            ⚡ Procesy
+          </button>
+          <button class="home-action-btn" id="btnHomeCleaner" type="button" data-jump="cleaner" title="Przejdź do Smart Cleanera">
+            🔍 Smart Cleaner
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scrollable Cards Container (Shown when inspecting details) -->
+    <main class="cards-container hidden-for-dashboard" id="cardsContainer">
+
+      <!-- DEVELOPER & LOCALHOST PORT INSPECTOR -->
+      <article class="card" id="sec-ports" data-cat="dev" data-also="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-purple"></span>
+            <h2>Porty Localhost &amp; Dev</h2>
+          </div>
+          <span class="card-pill" id="dockerStateBadge">Docker: Wył.</span>
+        </div>
+
+        <div class="top-procs-block ports-block">
+          <div class="top-procs-header">
+            <span id="portsCountLabel">Nasłuchujące porty TCP (0)</span>
+            <span class="top-procs-cols">Adres • RAM • Kill</span>
+          </div>
+          <div class="top-procs-list" id="portsList"></div>
+        </div>
+      </article>
+
+      <!-- CPU USAGE, CORES & TOP 10 CPU PROCESSES -->
+      <article class="card" id="sec-cpu" data-cat="top-cpu">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-indigo"></span>
+            <h2>Procesor (CPU) — Top 10</h2>
+          </div>
+          <span class="card-pill" id="cpuModelBadge">Apple Silicon</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="cpuTotalMain">0.0%</div>
+            <div class="hero-sub-line" id="cpuBreakdown">User: 0% • Sys: 0% • Idle: 100%</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Temp.</span><strong id="cpuTempBadge">--°C</strong></div>
+            <div class="meta-pair"><span>Load</span><strong id="cpuLoadBadge">0.00 / 0.00</strong></div>
+          </div>
+        </div>
+
+        <div class="top-procs-block">
+          <div class="top-procs-header">
+            <span>Top 10 procesów (CPU)</span>
+            <span class="top-procs-cols">RAM • % CPU</span>
+          </div>
+          <div class="top-procs-list" id="topCpuList"></div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <canvas id="canvasCpu" width="310" height="44"></canvas>
+        </div>
+
+        <div class="cores-section-title">Rdzenie (Efficiency E + Performance P)</div>
+        <div class="cores-grid" id="coresGrid"></div>
+      </article>
+
+      <!-- MEMORY (RAM & SWAP) & TOP 10 RAM PROCESSES -->
+      <article class="card" id="sec-ram" data-cat="top-ram">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-emerald"></span>
+            <h2>Pamięć RAM — Top 10</h2>
+          </div>
+          <span class="card-pill" id="ramPressureBadge">Ciśnienie: Norm.</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="ramMainVal">0.0 <small>/ 8.0 GB</small></div>
+            <div class="hero-sub-line" id="ramFreeSub">Wolne: 0.0 GB • Cache: 0.0 GB</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Zużycie</span><strong id="ramPctBadge">0.0%</strong></div>
+            <div class="meta-pair"><span>Swap</span><strong id="ramSwapBadge">0.0 GB</strong></div>
+          </div>
+        </div>
+
+        <div class="seg-bar-track">
+          <div class="seg-bar seg-app" id="segApp" style="width: 20%" title="Pamięć aplikacji"></div>
+          <div class="seg-bar seg-wired" id="segWired" style="width: 15%" title="Pamięć systemowa (Wired)"></div>
+          <div class="seg-bar seg-comp" id="segComp" style="width: 15%" title="Skompresowana"></div>
+        </div>
+        <div class="seg-legend">
+          <span><i class="leg-dot seg-app"></i> App: <b id="ramAppVal">0 GB</b></span>
+          <span><i class="leg-dot seg-wired"></i> Sys: <b id="ramWiredVal">0 GB</b></span>
+          <span><i class="leg-dot seg-comp"></i> Komp: <b id="ramCompVal">0 GB</b></span>
+        </div>
+
+        <div class="quick-action-bar">
+          <span class="quick-action-status" id="ramCleanStatus">Optymalizacja pamięci podręcznej i DNS</span>
+          <button class="action-btn emerald-btn" id="btnCleanRam" type="button" title="Opróżnij pamięć podręczną DNS (dscacheutil) i odśwież bufory RAM">🧹 Wyczyść RAM i DNS</button>
+        </div>
+
+        <div class="top-procs-block">
+          <div class="top-procs-header">
+            <span>Top 10 procesów (Pamięć RAM)</span>
+            <span class="top-procs-cols">Udział • Zużycie</span>
+          </div>
+          <div class="top-procs-list" id="topRamList"></div>
+        </div>
+      </article>
+
+      <!-- INTERNET SPEED & WI-FI SIGNAL -->
+      <article class="card" id="sec-net" data-cat="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-sky"></span>
+            <h2>Prędkość Internetu</h2>
+          </div>
+          <span class="card-pill" id="netIpBadge">en0 • —</span>
+        </div>
+
+        <div class="net-hero-grid">
+          <div class="net-speed-box down-box">
+            <div class="net-dir-label"><span class="arrow-down">↓</span> POBIERANIE</div>
+            <div class="net-speed-main" id="netDownMain">0.0 <small>KB/s</small></div>
+            <div class="net-speed-sub" id="netDownMbps">0.00 Mbps • 0 MB</div>
+          </div>
+          <div class="net-speed-box up-box">
+            <div class="net-dir-label"><span class="arrow-up">↑</span> WYSYŁANIE</div>
+            <div class="net-speed-main" id="netUpMain">0.0 <small>KB/s</small></div>
+            <div class="net-speed-sub" id="netUpMbps">0.00 Mbps • 0 MB</div>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <canvas id="canvasNet" width="310" height="44"></canvas>
+          <div class="sparkline-legend">
+            <span><i class="leg-dot bg-emerald"></i> Pobieranie</span>
+            <span><i class="leg-dot bg-sky"></i> Wysyłanie</span>
+            <span id="netPingLabel">Ping: -- ms</span>
+          </div>
+        </div>
+
+        <div class="speedtest-bar">
+          <div class="speedtest-info">
+            <span class="speedtest-status" id="speedtestStatus">Speedtest Cloudflare gotowy</span>
+            <div class="speedtest-prog-track" id="speedtestTrack" hidden>
+              <div class="speedtest-prog-fill" id="speedtestFill" style="width: 0%"></div>
+            </div>
+          </div>
+          <button class="action-btn" id="btnSpeedtest">Testuj łącze</button>
+        </div>
+      </article>
+
+      <!-- WI-FI SIGNAL STRENGTH -->
+      <article class="card" id="sec-wifi" data-cat="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-cyan"></span>
+            <h2>Siła sygnału Wi-Fi</h2>
+          </div>
+          <span class="card-pill" id="wifiQualityBadge">—</span>
+        </div>
+
+        <div class="wifi-main-row">
+          <div class="wifi-bars" id="wifiBars">
+            <span class="w-bar b1"></span>
+            <span class="w-bar b2"></span>
+            <span class="w-bar b3"></span>
+            <span class="w-bar b4"></span>
+            <span class="w-bar b5"></span>
+          </div>
+          <div class="wifi-primary-metrics">
+            <div class="wifi-big-pct"><span id="wifiPctVal">0%</span> <small id="wifiDbmVal">-- dBm</small></div>
+            <div class="wifi-band-line" id="wifiBandLine">Pasmo — • Kanał —</div>
+          </div>
+          <div class="wifi-tx-box">
+            <span class="wifi-tx-num" id="wifiTxRate">0</span>
+            <span class="wifi-tx-unit">Mbps Tx</span>
+          </div>
+        </div>
+
+        <div class="metrics-mini-grid cols-3">
+          <div class="mini-stat">
+            <span class="m-label">Sygnał (RSSI)</span>
+            <span class="m-val" id="wifiRssi">-- dBm</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Szum (Noise)</span>
+            <span class="m-val" id="wifiNoise">-- dBm</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Odstęp SNR</span>
+            <span class="m-val" id="wifiSnr">-- dB</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- GPU & TEMPERATURES -->
+      <article class="card" id="sec-gpu" data-cat="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-amber"></span>
+            <h2>GPU i Temperatury</h2>
+          </div>
+          <span class="card-pill" id="thermalStateBadge">Termika: OK</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="gpuMainVal">0% <small>GPU</small></div>
+            <div class="hero-sub-line" id="gpuSubLine">Renderer: 0% • Tiler: 0%</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>VRAM</span><strong id="gpuVramUsed">0 MB</strong></div>
+            <div class="meta-pair"><span>Alokacja</span><strong id="gpuVramAlloc">0.0 GB</strong></div>
+          </div>
+        </div>
+
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill bg-amber" id="gpuBarFill" style="width: 0%"></div>
+        </div>
+
+        <div class="temps-grid">
+          <div class="temp-chip">
+            <span class="t-name">CPU Średnia</span>
+            <span class="t-val" id="tempCpu">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Rdzenie P/E</span>
+            <span class="t-val" id="tempPE">-- / --°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Grafika GPU</span>
+            <span class="t-val" id="tempGpu">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">SoC Max Die</span>
+            <span class="t-val" id="tempSoc">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Dysk SSD</span>
+            <span class="t-val" id="tempSsd">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Bateria</span>
+            <span class="t-val" id="tempBatt">--°C</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- BATTERY & POWER TELEMETRY -->
+      <article class="card" id="sec-battery" data-cat="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-green"></span>
+            <h2>Bateria i Zasilanie</h2>
+          </div>
+          <span class="card-pill" id="battStateBadge">—</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="battPctMain">--%</div>
+            <div class="hero-sub-line" id="battTimeSub">Obliczanie czasu...</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Kondycja</span><strong id="battHealthVal">--%</strong></div>
+            <div class="meta-pair"><span>Cykle</span><strong id="battCyclesVal">--</strong></div>
+          </div>
+        </div>
+
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill bg-green" id="battBarFill" style="width: 0%"></div>
+        </div>
+
+        <div class="metrics-mini-grid cols-3">
+          <div class="mini-stat">
+            <span class="m-label">Pobór mocy</span>
+            <span class="m-val" id="battSysWatts">-- W</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Wejście USB-C</span>
+            <span class="m-val" id="battInWatts">-- W</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Napięcie/Prąd</span>
+            <span class="m-val" id="battVoltAmp">--V / --A</span>
+          </div>
+        </div>
+
+        <div class="top-procs-block" id="btDevicesBlock">
+          <div class="top-procs-header">
+            <span id="btDevicesCountLabel">Baterie Bluetooth (0)</span>
+            <span class="top-procs-cols">Poziom naładowania</span>
+          </div>
+          <div class="top-procs-list" id="btDevicesList"></div>
+        </div>
+      </article>
+
+      <!-- DISK SPACE (SSD / HDD) & SYSTEM JUNK CLEANER (CCleaner / Mac Sai Style) -->
+      <article class="card" id="sec-disk" data-cat="disk" data-also="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-purple"></span>
+            <h2>Dysk (<span id="diskName">Macintosh HD</span>) &amp; Pojemność</h2>
+          </div>
+          <span class="card-pill" id="diskPctBadge">0% zajęte</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="diskFreeMain">0.0 <small>GB wolne</small></div>
+            <div class="hero-sub-line" id="diskSubLine">Zajęte: 0.0 GB z 0.0 GB</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Temp. SSD</span><strong id="diskTempVal">--°C</strong></div>
+            <div class="meta-pair"><span>Uptime</span><strong id="sysUptimeVal">--</strong></div>
+          </div>
+        </div>
+
+        <div class="seg-bar-track">
+          <div class="seg-bar bg-purple" id="diskBarFill" style="width: 0%" title="Zajęte miejsce na dysku"></div>
+          <div class="seg-bar bg-amber" id="diskPurgeableFill" style="width: 0%" title="Miejsce do odzyskania (bufory APFS)"></div>
+        </div>
+
+        <div class="top-procs-list" id="volumesList"></div>
+
+        <!-- Disk Space Analyzer: Largest Directories & Largest Files -->
+        <div class="top-procs-block disk-usage-block" id="diskUsageBlock">
+          <div class="card-header cleaner-header">
+            <div class="card-title-group">
+              <span class="card-dot bg-sky"></span>
+              <h2>📊 Największe katalogi i pliki</h2>
+            </div>
+            <span class="card-pill" id="diskUsagePathBadge">~ (Katalog domowy)</span>
+          </div>
+
+          <div class="disk-scope-bar" id="diskScopeBar">
+            <div class="disk-scope-pills">
+              <button class="scope-pill active" type="button" data-disk-scope="" title="Przeskanuj katalog domowy użytkownika (~)">🏠 Domowy (~)</button>
+              <button class="scope-pill" type="button" data-disk-scope="/Applications" title="Przeskanuj zainstalowane aplikacje (/Applications)">🚀 Aplikacje</button>
+              <button class="scope-pill" type="button" data-disk-scope="~/Downloads" title="Przeskanuj katalog Pobrane (~/Downloads)">📥 Pobrane</button>
+              <button class="scope-pill" type="button" data-disk-scope="~/Desktop" title="Przeskanuj katalog Biurko (~/Desktop)">🖥 Biurko</button>
+              <button class="scope-pill refresh-pill" id="btnScanDiskUsage" type="button" title="Odśwież analizę zajętości dysku">🔄</button>
+            </div>
+          </div>
+
+          <div class="top-procs-header disk-sub-header">
+            <span id="topDirsHeaderLabel">📁 Największe katalogi (Top 10)</span>
+            <span class="top-procs-cols">Kliknij = wejdź • Rozmiar</span>
+          </div>
+          <div class="top-procs-list" id="topDirsList"></div>
+
+          <div class="top-procs-header disk-sub-header">
+            <span id="topFilesHeaderLabel">📄 Największe pliki (Top 10)</span>
+            <span class="top-procs-cols">Lokalizacja • Rozmiar</span>
+          </div>
+          <div class="top-procs-list" id="topFilesList"></div>
+        </div>
+      </article>
+
+      <!-- CCleaner / Mac Sai System Junk Cleaner Card -->
+      <article class="card" id="sec-cleaner" data-cat="cleaner">
+        <div class="top-procs-block cleaner-block" id="cleanerBlock">
+          <div class="card-header cleaner-header">
+            <div class="card-title-group">
+              <span class="card-dot bg-emerald"></span>
+              <h2>🧹 Czyszczenie Systemu (Smart Cleaner)</h2>
+            </div>
+            <span class="card-pill warn" id="junkTotalBadge">Skanowanie...</span>
+          </div>
+
+          <div class="cleaner-bar">
+            <div class="cleaner-bar-info">
+              <span class="cleaner-status" id="cleanerStatusText">Zaznacz kategorie śmieci do usunięcia</span>
+              <div class="speedtest-prog-track" id="cleanerProgTrack" hidden>
+                <div class="speedtest-prog-fill" id="cleanerProgFill" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="cleaner-btn-group">
+              <button class="action-btn subtle-btn" id="btnScanJunk" type="button" title="Przeskanuj ponownie katalogi pamięci podręcznej, logów i Kosza">🔍 Skanuj</button>
+              <button class="action-btn emerald-btn" id="btnCleanJunk" type="button" title="Usuń zaznaczone pliki tymczasowe, cache aplikacji, logi i opróżnij Kosz">🧹 Wyczyść</button>
+            </div>
+          </div>
+
+          <div class="top-procs-list" id="junkCategoriesList"></div>
+
+          <div class="quick-action-bar" style="margin-top: 4px;">
+            <span class="quick-action-status" id="cleanerDnsStatus">Szybkie czyszczenie pamięci podręcznej DNS i buforów</span>
+            <button class="action-btn emerald-btn" id="btnCleanRamAlt" type="button" title="Opróżnij pamięć podręczną DNS (dscacheutil) i odśwież bufory RAM">🧹 Wyczyść RAM i DNS</button>
+          </div>
+        </div>
+      </article>
+
+    </main>
+  </div>
+
+  <!-- Modern Floating Dark-Glass Tooltip (Variant A) -->
+  <div class="custom-tooltip" id="customTooltip" hidden>
+    <div class="tooltip-header">
+      <span class="tooltip-title" id="tooltipTitle"></span>
+    </div>
+    <div class="tooltip-desc" id="tooltipDesc"></div>
+    <div class="tooltip-hint" id="tooltipHint" hidden></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "latata-hub",
+  "version": "1.4.0",
+  "description": "Latata.Hub — Native macOS hardware and system monitoring widget built with TinyJS",
+  "main": "src/backend/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "tinyjs dev",
+    "dev": "tinyjs dev",
+    "build": "tinyjs build",
+    "build:native": "clang -O3 -fobjc-arc -framework Cocoa -framework IOKit -framework CoreWLAN src/native/macmon.m -o executables/macmon",
+    "test": "./test/run-e2e.sh",
+    "test:ui": "./test/run-e2e.sh --ui"
+  },
+  "keywords": [
+    "macos",
+    "system-monitor",
+    "tinyjs",
+    "txiki",
+    "webkit",
+    "apple-silicon",
+    "dashboard"
+  ]
+}

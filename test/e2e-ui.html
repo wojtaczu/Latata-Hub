@@ -1,0 +1,4998 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Latata.Hub — E2E UI Test Runner</title>
+  <style>
+:root {
+  --bg-widget: rgba(29, 37, 51, 0.82);
+  --bg-card: rgba(20, 26, 38, 0.68);
+  --bg-card-hover: rgba(28, 36, 52, 0.85);
+  --bg-subtle: rgba(255, 255, 255, 0.055);
+  --border-card: rgba(255, 255, 255, 0.09);
+  --border-highlight: rgba(255, 255, 255, 0.18);
+  --text-main: #f5f7fa;
+  --text-secondary: #a3b1c6;
+  --text-muted: #6e7d94;
+
+  --indigo: #6366f1;
+  --emerald: #22c55e;
+  --sky: #38bdf8;
+  --cyan: #06b6d4;
+  --amber: #facc15;
+  --rose: #f43f5e;
+  --purple: #a855f7;
+  --green: #34d399;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 356px;
+  min-height: 315px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  background:
+    linear-gradient(165deg, rgba(44, 55, 75, 0.72) 0%, rgba(23, 30, 43, 0.86) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Titlebar */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 4px 10px 0 12px;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+  transition: background 0.25s, box-shadow 0.25s;
+}
+
+.live-dot.ok {
+  background: #34d399;
+  box-shadow: 0 0 7px #34d399;
+}
+
+.app-title {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.app-title .accent {
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.chip-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 9.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+}
+
+.icon-btn.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #bae6fd;
+}
+
+/* Main Navigation Tab Bar (Variant A) */
+.nav-tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px 4px 6px;
+  background: rgba(14, 18, 27, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 2px;
+}
+
+.nav-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 3.5px 2px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 9.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.nav-tab.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #e0f2fe;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Processes Sub-Navigation Bar (Fixed under Tab Bar) */
+.procs-subnav-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(14, 18, 27, 0.55);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.procs-subnav-bar[hidden] {
+  display: none !important;
+}
+
+.subnav-pill {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4.5px 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 9.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.subnav-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+}
+
+.subnav-pill.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(129, 140, 248, 0.55);
+  color: #e0e7ff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Rings Panel (macOS Battery Widget Style) */
+.rings-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 11px 12px 11px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rings-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.rings-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rings-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.rings-panel.hidden-for-cards {
+  display: none !important;
+}
+
+.mini-hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  align-items: center;
+}
+
+.hud-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 2px 4px 2px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.hud-tile:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.hud-tile.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.hud-tile[data-jump="top-cpu"].active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(129, 140, 248, 0.45);
+}
+
+.hud-tile[data-jump="top-ram"].active {
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.hud-tile[data-jump="power"].active {
+  background: rgba(250, 204, 21, 0.16);
+  border-color: rgba(253, 224, 71, 0.45);
+}
+
+.hud-tile[data-jump="network"].active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(125, 211, 252, 0.45);
+}
+
+.ring-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-svg {
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 5.5;
+}
+
+.ring-fg {
+  fill: none;
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stroke-indigo { stroke: #60a5fa; }
+.stroke-emerald { stroke: #34d399; }
+.stroke-amber { stroke: #facc15; }
+.stroke-sky { stroke: #38bdf8; }
+
+.ring-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hud-pct-big {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.hud-meta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 0;
+}
+
+.hud-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hud-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Compact Net & Power Bar */
+.mini-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(13, 18, 28, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mini-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 1.5px 3px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.mini-strip-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mini-strip-sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.strip-icon.down { color: var(--emerald); font-weight: 700; }
+.strip-icon.up { color: var(--sky); font-weight: 700; }
+.strip-icon.batt { color: var(--amber); }
+.strip-muted { color: var(--text-muted); font-size: 9.5px; }
+.strip-val { color: var(--text-main); font-weight: 600; }
+
+/* Scrollable Cards Container */
+.cards-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 11px 11px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cards-container.hidden-for-dashboard {
+  display: none !important;
+}
+
+/* Home Live Glance & Quick Actions Widget (Rich Overview) */
+.home-glance-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 1px;
+}
+
+.home-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3.5px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 9.5px;
+  color: var(--text-secondary);
+}
+
+.home-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.home-meta-item strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.meta-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.home-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.home-chip {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 6px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.home-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.chip-title {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+.chip-sub {
+  font-size: 8px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.home-system-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.home-sys-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+  padding: 3.5px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 8.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.home-sys-pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.sys-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
+.sys-dot.dot-cyan { background: #38bdf8; }
+.sys-dot.dot-purple { background: #c084fc; }
+.sys-dot.dot-green { background: #34d399; box-shadow: 0 0 4px #34d399; }
+.sys-dot.dot-amber { background: #f59e0b; }
+
+.sys-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sys-val {
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+}
+
+.home-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.home-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  font-size: 9.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.home-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cards-container::-webkit-scrollbar {
+  width: 4px;
+}
+.cards-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cards-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+/* Telemetry Card */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 14px;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.card[hidden] {
+  display: none !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-title-group h2 {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.bg-indigo { background: var(--indigo); }
+.bg-emerald { background: var(--emerald); }
+.bg-sky { background: var(--sky); }
+.bg-cyan { background: var(--cyan); }
+.bg-amber { background: var(--amber); }
+.bg-green { background: var(--green); }
+.bg-purple { background: var(--purple); }
+.bg-rose { background: var(--rose); }
+
+.card-pill {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  padding: 1.5px 6px;
+  border-radius: 99px;
+  background: var(--bg-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.card-pill.good {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.card-pill.warn {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fcd34d;
+}
+
+.card-pill.crit {
+  background: rgba(244, 63, 94, 0.18);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fda4af;
+}
+
+/* Network Hero Grid */
+.net-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.net-speed-box {
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(12, 15, 22, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.net-dir-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.arrow-down { color: var(--emerald); }
+.arrow-up { color: var(--sky); }
+
+.net-speed-main {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.net-speed-main small {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.net-speed-sub {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Sparkline */
+.sparkline-wrap {
+  background: rgba(10, 13, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 5px 6px 4px 6px;
+}
+
+.sparkline-wrap canvas {
+  width: 100%;
+  height: 42px;
+  display: block;
+}
+
+.sparkline-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+}
+
+.leg-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  margin-right: 3px;
+}
+
+/* Speedtest Bar */
+.speedtest-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+.speedtest-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.speedtest-status {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #bae6fd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.speedtest-prog-track {
+  width: 100%;
+  height: 3.5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  margin-top: 3px;
+  overflow: hidden;
+}
+
+.speedtest-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--emerald), var(--sky));
+  transition: width 0.18s ease;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.18);
+  color: #e0f2fe;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.3);
+}
+
+.action-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Wi-Fi Signal Section */
+.wifi-main-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(12, 15, 22, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.wifi-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 24px;
+}
+
+.w-bar {
+  width: 4.5px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.w-bar.b1 { height: 5px; }
+.w-bar.b2 { height: 9px; }
+.w-bar.b3 { height: 14px; }
+.w-bar.b4 { height: 19px; }
+.w-bar.b5 { height: 24px; }
+
+.w-bar.on {
+  background: var(--cyan);
+  box-shadow: 0 0 5px rgba(6, 182, 212, 0.45);
+}
+
+.wifi-primary-metrics {
+  flex: 1;
+}
+
+.wifi-big-pct {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wifi-big-pct small {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.wifi-band-line {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.wifi-tx-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-left: 7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wifi-tx-num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sky);
+}
+
+.wifi-tx-unit {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+/* Mini 3-column metrics grid */
+.metrics-mini-grid {
+  display: grid;
+  gap: 5px;
+}
+
+.metrics-mini-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mini-stat {
+  background: var(--bg-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 7px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+}
+
+.m-label {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.m-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+
+/* Hero Stat Row */
+.stat-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-big-num {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-big-num small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hero-sub-line {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-secondary);
+}
+
+.hero-right-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.meta-pair {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 10px;
+}
+
+.meta-pair span {
+  color: var(--text-muted);
+}
+
+.meta-pair strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+
+/* CPU Cores Grid */
+.cores-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cores-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.core-pill {
+  background: rgba(12, 15, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 4px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+}
+
+.core-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.core-name { font-weight: 700; color: var(--text-secondary); }
+.core-name.type-P { color: #a5b4fc; }
+.core-name.type-E { color: #6ee7b7; }
+.core-pct { font-variant-numeric: tabular-nums; color: var(--text-main); }
+
+.core-bar-bg {
+  height: 3.5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.core-bar-fg {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.core-bar-fg.type-P { background: var(--indigo); }
+.core-bar-fg.type-E { background: var(--emerald); }
+.core-bar-fg.type-C { background: var(--sky); }
+
+/* Segmented RAM Bar */
+.seg-bar-track,
+.prog-bar-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  display: flex;
+}
+
+.seg-bar,
+.prog-bar-fill {
+  height: 100%;
+  transition: width 0.35s ease;
+}
+
+.seg-app { background: var(--emerald); }
+.seg-wired { background: var(--sky); }
+.seg-comp { background: var(--amber); }
+
+.seg-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-secondary);
+}
+
+.seg-legend b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+
+/* Temperature Sensors Grid */
+.temps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.temp-chip {
+  background: rgba(12, 15, 22, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 7px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+}
+
+.t-name {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.t-val {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.t-val.warm { color: #fcd34d; }
+.t-val.hot { color: #fda4af; }
+.t-val.cool { color: #6ee7b7; }
+
+/* Top 10 Processes List (CPU & RAM) */
+.top-procs-block {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.top-procs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.top-procs-cols {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.top-procs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.proc-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3.5px 7px;
+  border-radius: 6px;
+  background: rgba(10, 12, 18, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  overflow: hidden;
+  font-size: 10.5px;
+}
+
+.proc-bar-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  transition: width 0.35s ease;
+}
+
+.proc-bar-bg.cpu-bar {
+  background: linear-gradient(90deg, var(--indigo), rgba(99, 102, 241, 0.2));
+}
+
+.proc-bar-bg.ram-bar {
+  background: linear-gradient(90deg, var(--emerald), rgba(16, 185, 129, 0.2));
+}
+
+.proc-left {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.proc-rank {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 17px;
+  flex-shrink: 0;
+}
+
+.proc-name {
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proc-pid {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.proc-right {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.proc-sub {
+  font-size: 9.5px;
+  color: var(--text-secondary);
+}
+
+.proc-primary {
+  font-size: 10.5px;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: right;
+}
+
+.proc-primary.cpu-val { color: #c7d2fe; }
+.proc-primary.ram-val { color: #6ee7b7; }
+
+/* Native App Icon & CLI Fallback in Process & Port Rows */
+.proc-icon {
+  width: 15px;
+  height: 15px;
+  border-radius: 3.5px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.proc-icon-fallback {
+  width: 15px;
+  height: 15px;
+  border-radius: 3.5px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+/* One-Click Kill Button */
+.proc-kill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1px solid rgba(244, 63, 94, 0.28);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fda4af;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.proc-row:hover .proc-kill-btn {
+  opacity: 1;
+}
+
+.proc-kill-btn:hover {
+  opacity: 1 !important;
+  background: rgba(244, 63, 94, 0.35);
+  border-color: rgba(244, 63, 94, 0.7);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+.proc-kill-btn:active {
+  transform: scale(0.95);
+}
+
+/* Developer & Port Inspector */
+.strip-icon.ports {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+.mini-strip-item.active {
+  background: rgba(168, 85, 247, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(192, 132, 252, 0.45);
+}
+
+.ports-block {
+  margin-top: 0;
+  padding-top: 2px;
+  border-top: none;
+}
+
+.port-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.port-badge.dev-port {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.42);
+  color: #7dd3fc;
+}
+
+.port-empty {
+  padding: 10px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+/* Low Battery Warning Theme (<10% / <=10% on battery) */
+@keyframes lowBattPulse {
+  0%, 100% {
+    border-color: rgba(244, 63, 94, 0.78);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 180, 180, 0.28),
+      inset 0 0 26px rgba(244, 63, 94, 0.25);
+  }
+  50% {
+    border-color: rgba(250, 204, 21, 0.85);
+    box-shadow:
+      inset 0 1px 0 rgba(254, 240, 138, 0.32),
+      inset 0 0 34px rgba(244, 63, 94, 0.42);
+  }
+}
+
+.app-shell.low-battery-warning {
+  background:
+    linear-gradient(165deg, rgba(88, 24, 38, 0.88) 0%, rgba(46, 15, 25, 0.94) 100%);
+  border: 1.5px solid rgba(244, 63, 94, 0.8);
+  animation: lowBattPulse 2.2s infinite ease-in-out;
+}
+
+.app-shell.low-battery-warning .app-title .accent {
+  color: #fda4af;
+}
+
+.app-shell.low-battery-warning .mini-strip {
+  background: rgba(45, 12, 20, 0.68);
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+/* Header Icon-Only Buttons (Caffeinate & Battery Rings Mode) */
+.icon-btn.icon-only {
+  padding: 0 6px;
+  min-width: 23px;
+  justify-content: center;
+  font-size: 11px;
+}
+
+#btnCaffeinate.active {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: rgba(250, 204, 21, 0.55);
+  color: #fef08a;
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.25);
+}
+
+/* Tooltips ON / OFF Pill Button (High Visibility Glass) */
+.tooltip-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px 0 5px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s ease;
+  flex-shrink: 0;
+  opacity: 1 !important;
+}
+
+.tooltip-toggle-btn .tooltip-bulb-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.tooltip-toggle-btn .tooltip-toggle-text {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Tooltips ON State (Warm Glowing Amber Glass) */
+.tooltip-toggle-btn.active,
+.tooltip-toggle-btn:not(.off) {
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  color: #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+}
+
+.tooltip-toggle-btn.active:hover {
+  background: rgba(245, 158, 11, 0.32);
+  border-color: rgba(245, 158, 11, 0.75);
+}
+
+/* Tooltips OFF State (Crisp Slate Glass with Coral Accent) */
+.tooltip-toggle-btn.off {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+.tooltip-toggle-btn.off .tooltip-bulb-icon {
+  opacity: 0.65;
+  filter: grayscale(0.8);
+}
+
+.tooltip-toggle-btn.off .tooltip-toggle-text {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.tooltip-toggle-btn.off:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.home-meta-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.home-meta-btn:hover {
+  opacity: 0.85;
+}
+
+.home-meta-btn strong {
+  transition: color 0.15s ease;
+}
+
+.home-meta-btn.off strong {
+  color: #f87171;
+}
+
+.home-meta-btn.active strong {
+  color: #fbbf24;
+}
+
+/* Always-Visible Battery & Bluetooth Buttons Row */
+.bt-hud-row .hud-tile {
+  padding: 4px 2px 3px 2px;
+  border-radius: 11px;
+}
+
+.bt-hud-row .ring-wrap,
+.bt-hud-row .ring-svg {
+  width: 36px;
+  height: 36px;
+}
+
+.bt-hud-row .hud-pct-big {
+  font-size: 12px;
+  margin-top: 1px;
+}
+
+.stroke-rose {
+  stroke: #f43f5e;
+}
+
+.bt-slot .ring-icon {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.bt-slot .hud-label {
+  max-width: 72px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  font-size: 8.5px;
+}
+
+.bt-slot.empty-slot {
+  opacity: 0.42;
+}
+
+.bt-slot.empty-slot .hud-pct-big {
+  color: var(--text-muted);
+}
+
+/* Always-Visible Disk Capacity (SSD/HDD) & System Cleaner Bar */
+.disk-hud-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(16, 22, 34, 0.56);
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.disk-hud-bar:hover,
+.disk-hud-bar.active {
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(192, 132, 252, 0.48);
+}
+
+.disk-hud-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.disk-hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.disk-hud-title {
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.disk-hud-title b {
+  font-weight: 700;
+}
+
+.disk-hud-cap {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  color: #d8b4fe;
+  flex-shrink: 0;
+}
+
+.disk-hud-track {
+  width: 100%;
+  height: 4.5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.disk-hud-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #a855f7, #38bdf8);
+  transition: width 0.35s ease;
+}
+
+.hud-clean-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3.5px 7px;
+  border-radius: 7px;
+  border: 1px solid rgba(52, 211, 153, 0.42);
+  background: rgba(16, 185, 129, 0.18);
+  color: #d1fae5;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.hud-clean-btn:hover {
+  background: rgba(16, 185, 129, 0.34);
+  border-color: rgba(52, 211, 153, 0.7);
+}
+
+/* CCleaner / Mac Sai System Cleaner Block */
+.cleaner-block {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 6px;
+}
+
+.cleaner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+}
+
+.cleaner-bar-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cleaner-status {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: #a7f3d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cleaner-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.action-btn.subtle-btn {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary);
+}
+
+.action-btn.subtle-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+}
+
+.junk-row {
+  cursor: pointer;
+  padding: 4.5px 7px;
+}
+
+.junk-row:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.junk-check {
+  width: 13px;
+  height: 13px;
+  accent-color: #10b981;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.junk-text-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.junk-sub {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Quick Action Bar (RAM & DNS Cleaner) */
+.quick-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
+.quick-action-status {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: #a7f3d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-btn.emerald-btn {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.2);
+  color: #d1fae5;
+}
+
+.action-btn.emerald-btn:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.34);
+}
+
+/* Disk Space Analyzer: Largest Directories & Files */
+.disk-usage-block {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 5px;
+}
+
+.disk-scope-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.disk-scope-pills,
+.disk-scope-actions {
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  flex-wrap: wrap;
+}
+
+.scope-pill {
+  padding: 3px 6.5px;
+  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.scope-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+}
+
+.scope-pill.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #e0f2fe;
+}
+
+.scope-pill.back-pill {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(192, 132, 252, 0.45);
+  color: #f3e8ff;
+}
+
+.disk-sub-header {
+  margin-top: 3px;
+}
+
+.dir-row-clickable {
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.dir-row-clickable:hover {
+  background: rgba(56, 189, 248, 0.11);
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.proc-bar-bg.disk-dir-bar {
+  background: linear-gradient(90deg, #38bdf8, rgba(56, 189, 248, 0.18));
+}
+
+.proc-bar-bg.disk-file-bar {
+  background: linear-gradient(90deg, #a855f7, rgba(168, 85, 247, 0.18));
+}
+
+.reveal-finder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 9.5px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  flex-shrink: 0;
+}
+
+.reveal-finder-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #e0f2fe;
+}
+
+/* Modern Floating Dark-Glass Tooltip (Variant A) */
+.custom-tooltip {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  max-width: 250px;
+  min-width: 140px;
+  padding: 8px 10px 9px 10px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
+  color: var(--text-main);
+  opacity: 0;
+  transform: translateY(3px) scale(0.98);
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1), transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  overflow: hidden;
+}
+
+.custom-tooltip[hidden] {
+  display: none !important;
+}
+
+.custom-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2.5px;
+}
+
+.tooltip-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tooltip-desc {
+  font-size: 10px;
+  line-height: 1.35;
+  color: #94a3b8;
+  word-break: break-word;
+}
+
+.tooltip-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 9px;
+  font-weight: 500;
+  color: #cbd5e1;
+  font-family: var(--font-sans);
+}
+
+.tooltip-hint[hidden],
+.tooltip-hint:empty {
+  display: none !important;
+}
+
+.tooltip-hint kbd {
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-size: 8.5px;
+  color: #f1f5f9;
+}
+
+
+    /* Live E2E HUD Banner */
+    #e2eBanner {
+      position: fixed;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      font-family: -apple-system, system-ui, sans-serif;
+      font-size: 11px;
+      z-index: 99999;
+      color: #f1f5f9;
+      pointer-events: none;
+    }
+    #e2eBanner.success { border-color: rgba(34, 197, 94, 0.6); background: rgba(6, 78, 59, 0.95); }
+    #e2eBanner.failure { border-color: rgba(244, 63, 94, 0.6); background: rgba(136, 19, 55, 0.95); }
+    .e2e-row { display: flex; justify-content: space-between; align-items: center; }
+    .e2e-title { font-weight: 700; color: #38bdf8; }
+    .e2e-count { font-family: monospace; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell compact-mode" id="appShell" data-view="top-cpu">
+    <!-- Draggable macOS Widget Header -->
+    <header class="titlebar" data-tiny-drag>
+      <div class="titlebar-left">
+        <span class="live-dot" id="liveDot" title="Połączono z backendem txiki.js"></span>
+        <span class="app-title">Latata<span class="accent">.Hub</span></span>
+      </div>
+      <div class="titlebar-actions" data-tiny-nodrag>
+        <button class="icon-btn tooltip-toggle-btn active" id="btnToggleTooltips" type="button" title="Wskazówki (Tooltipy): Włączone (kliknij, aby wyłączyć)">
+          <span class="tooltip-bulb-icon" id="tooltipToggleIcon">💡</span>
+          <span class="tooltip-toggle-text" id="tooltipToggleText">ON</span>
+        </button>
+        <button class="icon-btn icon-only" id="btnCaffeinate" type="button" title="Tryb Caffeinate: blokuj usypianie ekranu i Maca (Wył.)">
+          <span id="caffeinateIcon">☕</span>
+        </button>
+        <button class="icon-btn" id="btnPin" type="button" title="Przypnij zawsze na wierzchu (Always on Top)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+          </svg>
+          <span id="layerLabel">Przypnij</span>
+        </button>
+        <button class="icon-btn" id="btnCompact" type="button" title="Dopasowany rozmiar (356×548) / Pełna kolumna (356×760)">
+          <span id="compactLabel">Rozwiń</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tab Bar (Variant A) -->
+    <nav class="nav-tab-bar" id="mainTabBar" data-tiny-nodrag>
+      <button class="nav-tab active" type="button" data-tab="dashboard" title="Home — podsumowanie Maca, kółka i baterie">🏠 Home</button>
+      <button class="nav-tab" type="button" data-tab="procs" title="Procesy — CPU, RAM i Porty TCP">⚡ Procesy</button>
+      <button class="nav-tab" type="button" data-tab="disk" title="Dysk — pojemność, największe katalogi i pliki">💾 Dysk</button>
+      <button class="nav-tab" type="button" data-tab="cleaner" title="Cleaner — czyszczenie pamięci podręcznej i śmieci">🧹 Cleaner</button>
+      <button class="nav-tab" type="button" data-tab="network" title="Sieć — prędkość łącza i sygnał Wi-Fi">🌐 Sieć</button>
+      <button class="nav-tab" type="button" data-tab="sensors" title="Sensory — temperatury, GPU i zasilanie">🌡 Sensory</button>
+    </nav>
+
+    <!-- Subnav for Processes (CPU / RAM / Ports) — Fixed under tab bar -->
+    <div class="procs-subnav-bar" id="procsSubnav" hidden data-tiny-nodrag>
+      <button class="subnav-pill active" id="subtabCpu" type="button" data-procs-sub="top-cpu" title="Top 10 procesów obciążających procesor">💻 Procesor CPU</button>
+      <button class="subnav-pill" id="subtabRam" type="button" data-procs-sub="top-ram" title="Top 10 procesów zużywających pamięć RAM">🧠 Pamięć RAM</button>
+      <button class="subnav-pill" id="subtabPorts" type="button" data-procs-sub="dev" title="Nasłuchujące porty deweloperskie i Docker">⇄ Porty TCP (<span id="procsPortsCount">0</span>)</button>
+    </div>
+
+    <!-- Always-Visible Top Section: macOS Battery-Style 4 Rings + Live Status Strip -->
+    <section class="rings-panel" id="ringsPanel">
+      <div class="mini-hud" id="miniHudSystem">
+        <!-- CPU Ring (like macOS Battery Widget) -->
+        <div class="hud-tile active" data-jump="top-cpu" title="Kliknij, aby zobaczyć Top 10 procesów CPU">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-indigo" id="ringCpu" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+                <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudCpuPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">CPU</span>
+            <span class="hud-sub" id="hudCpuTemp">--°C</span>
+          </div>
+        </div>
+
+        <!-- RAM Ring -->
+        <div class="hud-tile" data-jump="top-ram" title="Kliknij, aby zobaczyć Top 10 procesów RAM">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringRam" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M8 11V9M16 11V9M12 11V9M2 15h20M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudRamPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">RAM</span>
+            <span class="hud-sub" id="hudRamUsed">0.0 GB</span>
+          </div>
+        </div>
+
+        <!-- GPU Ring -->
+        <div class="hud-tile" data-jump="power" title="Kliknij, aby zobaczyć GPU i Temperatury">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-amber" id="ringGpu" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudGpuPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">GPU</span>
+            <span class="hud-sub" id="hudGpuTemp">--°C</span>
+          </div>
+        </div>
+
+        <!-- Wi-Fi Ring -->
+        <div class="hud-tile" data-jump="network" title="Kliknij, aby zobaczyć Prędkość Internetu i Wi-Fi">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-sky" id="ringWifi" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+            </div>
+          </div>
+          <div class="hud-pct-big" id="hudWifiPct">0%</div>
+          <div class="hud-meta">
+            <span class="hud-label">WI-FI</span>
+            <span class="hud-sub" id="hudWifiDbm">-- dBm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Always-Visible Battery Buttons (MacBook + Bluetooth Accessories) -->
+      <div class="mini-hud bt-hud-row" id="miniHudBattery">
+        <!-- Slot 0: MacBook Internal Battery -->
+        <div class="hud-tile bt-slot" id="btSlot0" data-jump="power" title="Bateria MacBooka — kliknij, aby otworzyć Bateria i Zasilanie">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt0" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon0">💻</div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct0">--%</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel0">MacBook</span>
+          </div>
+        </div>
+
+        <!-- Slot 1: Bluetooth Accessory 1 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot1" data-jump="power" title="Urządzenie Bluetooth #1">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt1" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon1"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct1">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel1">Bluetooth</span>
+          </div>
+        </div>
+
+        <!-- Slot 2: Bluetooth Accessory 2 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot2" data-jump="power" title="Urządzenie Bluetooth #2">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt2" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon2"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct2">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel2">Bluetooth</span>
+          </div>
+        </div>
+
+        <!-- Slot 3: Bluetooth Accessory 3 -->
+        <div class="hud-tile bt-slot empty-slot" id="btSlot3" data-jump="power" title="Urządzenie Bluetooth #3">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="22" />
+              <circle class="ring-fg stroke-emerald" id="ringBatt3" cx="28" cy="28" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23" />
+            </svg>
+            <div class="ring-icon" id="hudBattIcon3"></div>
+          </div>
+          <div class="hud-pct-big" id="hudBattPct3">—</div>
+          <div class="hud-meta">
+            <span class="hud-label" id="hudBattLabel3">Bluetooth</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Always-Visible Disk Capacity (SSD/HDD) & System Cleaner Bar -->
+      <div class="disk-hud-bar" id="diskHudBar" data-jump="disk" title="Pojemność Dysku SSD — kliknij, aby przejść do szczegółów">
+        <div class="disk-hud-left">
+          <div class="disk-hud-top">
+            <span class="disk-hud-title">💾 <b id="hudDiskName">Macintosh HD</b></span>
+            <span class="disk-hud-cap" id="hudDiskCap">Wolne: -- GB z -- GB (--%)</span>
+          </div>
+          <div class="disk-hud-track">
+            <div class="disk-hud-fill" id="hudDiskBarFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <button class="hud-clean-btn" id="btnHudCleaner" type="button" data-jump="cleaner" title="Oczyść system ze śmieci (w stylu CCleaner / Mac Sai)">
+          🧹 <span id="hudJunkBadge">Cleaner</span>
+        </button>
+      </div>
+
+      <!-- Live Status Strip inside Widget -->
+      <div class="mini-strip">
+        <div class="mini-strip-item" data-jump="network" title="Prędkość pobierania (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-icon down">↓</span>
+          <span class="strip-val" id="stripDown">0 KB/s</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="network" title="Prędkość wysyłania (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-icon up">↑</span>
+          <span class="strip-val" id="stripUp">0 KB/s</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="network" title="Opóźnienie sieci Ping (kliknij, aby otworzyć sekcję Sieć)">
+          <span class="strip-muted">Ping</span>
+          <span class="strip-val" id="stripPing">--</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="power" title="Stan baterii (kliknij, aby otworzyć sensory)">
+          <span class="strip-icon batt" id="stripBattIcon">⚡</span>
+          <span class="strip-val" id="stripBatt">--%</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="disk" id="stripDiskItem" title="Pojemność dysku SSD/HDD i System Cleaner (kliknij, aby otworzyć)">
+          <span class="strip-muted">Dysk</span>
+          <span class="strip-val" id="stripDisk">--/-- GB</span>
+        </div>
+        <div class="mini-strip-sep"></div>
+        <div class="mini-strip-item" data-jump="dev" id="stripPortsItem" title="Aktywne porty TCP Localhost / Dev (kliknij, aby otworzyć Port Inspector)">
+          <span class="strip-icon ports">⇄</span>
+          <span class="strip-val" id="stripPorts">0</span>
+        </div>
+      </div>
+
+      <!-- Home Live Glance & Quick Actions Widget (Rich Overview) -->
+      <div class="home-glance-panel" id="homeGlancePanel">
+        <div class="home-meta-bar">
+          <div class="home-meta-item">
+            <span class="meta-dot"></span>
+            <span class="meta-label">Mac:</span>
+            <strong id="homeMacModel">Apple Silicon</strong>
+          </div>
+          <div class="home-meta-item">
+            <span class="meta-label">Uptime:</span>
+            <strong id="homeUptime">--</strong>
+          </div>
+          <div class="home-meta-item">
+            <span class="meta-label">Sieć:</span>
+            <strong id="homeWifiSsid">--</strong>
+          </div>
+          <button class="home-meta-item home-meta-btn" id="btnHomeToggleTooltips" type="button" title="Wskazówki (Tooltipy) — kliknij, aby włączyć lub wyłączyć">
+            <span class="meta-label">Tooltipy:</span>
+            <strong id="homeTooltipsStatus">Wł.</strong>
+          </button>
+        </div>
+
+        <div class="home-chips-grid">
+          <div class="home-chip" data-jump="power" title="Sensory termiczne i temperatury — kliknij, aby otworzyć">
+            <div class="chip-title">🌡 Termika SoC</div>
+            <div class="chip-val" id="homeChipTemp">--°C</div>
+            <div class="chip-sub" id="homeChipTempSub">CPU &amp; GPU OK</div>
+          </div>
+          <div class="home-chip" data-jump="power" title="Diagnostyka baterii i zasilanie — kliknij, aby otworzyć">
+            <div class="chip-title">🔋 Bateria</div>
+            <div class="chip-val" id="homeChipBatt">--%</div>
+            <div class="chip-sub" id="homeChipBattSub">Kondycja --%</div>
+          </div>
+          <div class="home-chip" data-jump="network" title="Parametry łącza i opóźnienie — kliknij, aby otworzyć">
+            <div class="chip-title">⚡ Ping / Łącze</div>
+            <div class="chip-val" id="homeChipPing">-- ms</div>
+            <div class="chip-sub" id="homeChipNetSub">↓ 0 KB/s</div>
+          </div>
+        </div>
+
+        <div class="home-system-status-row" id="homeSysStatusRow">
+          <div class="home-sys-pill" data-jump="top-cpu" title="Poziom obciążenia systemu (Load Average 1m / 5m)">
+            <span class="sys-dot dot-cyan"></span>
+            <span class="sys-label">Load:</span>
+            <strong class="sys-val" id="homeLoadAvg">0.00 / 0.00</strong>
+          </div>
+          <div class="home-sys-pill" data-jump="top-ram" title="Użycie pliku wymiany Swap">
+            <span class="sys-dot dot-purple"></span>
+            <span class="sys-label">Swap:</span>
+            <strong class="sys-val" id="homeSwapVal">0 MB</strong>
+          </div>
+          <div class="home-sys-pill" data-jump="dev" title="Status środowiska deweloperskiego Docker">
+            <span class="sys-dot" id="homeDockerDot"></span>
+            <span class="sys-label">Docker:</span>
+            <strong class="sys-val" id="homeDockerVal">Wył.</strong>
+          </div>
+        </div>
+
+        <div class="home-actions-bar">
+          <button class="home-action-btn" id="btnHomeCleanRam" type="button" title="Szybkie czyszczenie pamięci podręcznej DNS (dscacheutil) i zwolnienie nieaktywnego RAM">
+            🧹 <span id="homeCleanRamLabel">Wyczyść RAM i DNS</span>
+          </button>
+          <button class="home-action-btn" id="btnHomeProcs" type="button" data-jump="top-cpu" title="Przejdź do pełnej listy procesów CPU i RAM">
+            ⚡ Procesy
+          </button>
+          <button class="home-action-btn" id="btnHomeCleaner" type="button" data-jump="cleaner" title="Przejdź do Smart Cleanera">
+            🔍 Smart Cleaner
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scrollable Cards Container (Shown when inspecting details) -->
+    <main class="cards-container hidden-for-dashboard" id="cardsContainer">
+
+      <!-- DEVELOPER & LOCALHOST PORT INSPECTOR -->
+      <article class="card" id="sec-ports" data-cat="dev" data-also="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-purple"></span>
+            <h2>Porty Localhost &amp; Dev</h2>
+          </div>
+          <span class="card-pill" id="dockerStateBadge">Docker: Wył.</span>
+        </div>
+
+        <div class="top-procs-block ports-block">
+          <div class="top-procs-header">
+            <span id="portsCountLabel">Nasłuchujące porty TCP (0)</span>
+            <span class="top-procs-cols">Adres • RAM • Kill</span>
+          </div>
+          <div class="top-procs-list" id="portsList"></div>
+        </div>
+      </article>
+
+      <!-- CPU USAGE, CORES & TOP 10 CPU PROCESSES -->
+      <article class="card" id="sec-cpu" data-cat="top-cpu">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-indigo"></span>
+            <h2>Procesor (CPU) — Top 10</h2>
+          </div>
+          <span class="card-pill" id="cpuModelBadge">Apple Silicon</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="cpuTotalMain">0.0%</div>
+            <div class="hero-sub-line" id="cpuBreakdown">User: 0% • Sys: 0% • Idle: 100%</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Temp.</span><strong id="cpuTempBadge">--°C</strong></div>
+            <div class="meta-pair"><span>Load</span><strong id="cpuLoadBadge">0.00 / 0.00</strong></div>
+          </div>
+        </div>
+
+        <div class="top-procs-block">
+          <div class="top-procs-header">
+            <span>Top 10 procesów (CPU)</span>
+            <span class="top-procs-cols">RAM • % CPU</span>
+          </div>
+          <div class="top-procs-list" id="topCpuList"></div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <canvas id="canvasCpu" width="310" height="44"></canvas>
+        </div>
+
+        <div class="cores-section-title">Rdzenie (Efficiency E + Performance P)</div>
+        <div class="cores-grid" id="coresGrid"></div>
+      </article>
+
+      <!-- MEMORY (RAM & SWAP) & TOP 10 RAM PROCESSES -->
+      <article class="card" id="sec-ram" data-cat="top-ram">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-emerald"></span>
+            <h2>Pamięć RAM — Top 10</h2>
+          </div>
+          <span class="card-pill" id="ramPressureBadge">Ciśnienie: Norm.</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="ramMainVal">0.0 <small>/ 8.0 GB</small></div>
+            <div class="hero-sub-line" id="ramFreeSub">Wolne: 0.0 GB • Cache: 0.0 GB</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Zużycie</span><strong id="ramPctBadge">0.0%</strong></div>
+            <div class="meta-pair"><span>Swap</span><strong id="ramSwapBadge">0.0 GB</strong></div>
+          </div>
+        </div>
+
+        <div class="seg-bar-track">
+          <div class="seg-bar seg-app" id="segApp" style="width: 20%" title="Pamięć aplikacji"></div>
+          <div class="seg-bar seg-wired" id="segWired" style="width: 15%" title="Pamięć systemowa (Wired)"></div>
+          <div class="seg-bar seg-comp" id="segComp" style="width: 15%" title="Skompresowana"></div>
+        </div>
+        <div class="seg-legend">
+          <span><i class="leg-dot seg-app"></i> App: <b id="ramAppVal">0 GB</b></span>
+          <span><i class="leg-dot seg-wired"></i> Sys: <b id="ramWiredVal">0 GB</b></span>
+          <span><i class="leg-dot seg-comp"></i> Komp: <b id="ramCompVal">0 GB</b></span>
+        </div>
+
+        <div class="quick-action-bar">
+          <span class="quick-action-status" id="ramCleanStatus">Optymalizacja pamięci podręcznej i DNS</span>
+          <button class="action-btn emerald-btn" id="btnCleanRam" type="button" title="Opróżnij pamięć podręczną DNS (dscacheutil) i odśwież bufory RAM">🧹 Wyczyść RAM i DNS</button>
+        </div>
+
+        <div class="top-procs-block">
+          <div class="top-procs-header">
+            <span>Top 10 procesów (Pamięć RAM)</span>
+            <span class="top-procs-cols">Udział • Zużycie</span>
+          </div>
+          <div class="top-procs-list" id="topRamList"></div>
+        </div>
+      </article>
+
+      <!-- INTERNET SPEED & WI-FI SIGNAL -->
+      <article class="card" id="sec-net" data-cat="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-sky"></span>
+            <h2>Prędkość Internetu</h2>
+          </div>
+          <span class="card-pill" id="netIpBadge">en0 • —</span>
+        </div>
+
+        <div class="net-hero-grid">
+          <div class="net-speed-box down-box">
+            <div class="net-dir-label"><span class="arrow-down">↓</span> POBIERANIE</div>
+            <div class="net-speed-main" id="netDownMain">0.0 <small>KB/s</small></div>
+            <div class="net-speed-sub" id="netDownMbps">0.00 Mbps • 0 MB</div>
+          </div>
+          <div class="net-speed-box up-box">
+            <div class="net-dir-label"><span class="arrow-up">↑</span> WYSYŁANIE</div>
+            <div class="net-speed-main" id="netUpMain">0.0 <small>KB/s</small></div>
+            <div class="net-speed-sub" id="netUpMbps">0.00 Mbps • 0 MB</div>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <canvas id="canvasNet" width="310" height="44"></canvas>
+          <div class="sparkline-legend">
+            <span><i class="leg-dot bg-emerald"></i> Pobieranie</span>
+            <span><i class="leg-dot bg-sky"></i> Wysyłanie</span>
+            <span id="netPingLabel">Ping: -- ms</span>
+          </div>
+        </div>
+
+        <div class="speedtest-bar">
+          <div class="speedtest-info">
+            <span class="speedtest-status" id="speedtestStatus">Speedtest Cloudflare gotowy</span>
+            <div class="speedtest-prog-track" id="speedtestTrack" hidden>
+              <div class="speedtest-prog-fill" id="speedtestFill" style="width: 0%"></div>
+            </div>
+          </div>
+          <button class="action-btn" id="btnSpeedtest">Testuj łącze</button>
+        </div>
+      </article>
+
+      <!-- WI-FI SIGNAL STRENGTH -->
+      <article class="card" id="sec-wifi" data-cat="network">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-cyan"></span>
+            <h2>Siła sygnału Wi-Fi</h2>
+          </div>
+          <span class="card-pill" id="wifiQualityBadge">—</span>
+        </div>
+
+        <div class="wifi-main-row">
+          <div class="wifi-bars" id="wifiBars">
+            <span class="w-bar b1"></span>
+            <span class="w-bar b2"></span>
+            <span class="w-bar b3"></span>
+            <span class="w-bar b4"></span>
+            <span class="w-bar b5"></span>
+          </div>
+          <div class="wifi-primary-metrics">
+            <div class="wifi-big-pct"><span id="wifiPctVal">0%</span> <small id="wifiDbmVal">-- dBm</small></div>
+            <div class="wifi-band-line" id="wifiBandLine">Pasmo — • Kanał —</div>
+          </div>
+          <div class="wifi-tx-box">
+            <span class="wifi-tx-num" id="wifiTxRate">0</span>
+            <span class="wifi-tx-unit">Mbps Tx</span>
+          </div>
+        </div>
+
+        <div class="metrics-mini-grid cols-3">
+          <div class="mini-stat">
+            <span class="m-label">Sygnał (RSSI)</span>
+            <span class="m-val" id="wifiRssi">-- dBm</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Szum (Noise)</span>
+            <span class="m-val" id="wifiNoise">-- dBm</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Odstęp SNR</span>
+            <span class="m-val" id="wifiSnr">-- dB</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- GPU & TEMPERATURES -->
+      <article class="card" id="sec-gpu" data-cat="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-amber"></span>
+            <h2>GPU i Temperatury</h2>
+          </div>
+          <span class="card-pill" id="thermalStateBadge">Termika: OK</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="gpuMainVal">0% <small>GPU</small></div>
+            <div class="hero-sub-line" id="gpuSubLine">Renderer: 0% • Tiler: 0%</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>VRAM</span><strong id="gpuVramUsed">0 MB</strong></div>
+            <div class="meta-pair"><span>Alokacja</span><strong id="gpuVramAlloc">0.0 GB</strong></div>
+          </div>
+        </div>
+
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill bg-amber" id="gpuBarFill" style="width: 0%"></div>
+        </div>
+
+        <div class="temps-grid">
+          <div class="temp-chip">
+            <span class="t-name">CPU Średnia</span>
+            <span class="t-val" id="tempCpu">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Rdzenie P/E</span>
+            <span class="t-val" id="tempPE">-- / --°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Grafika GPU</span>
+            <span class="t-val" id="tempGpu">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">SoC Max Die</span>
+            <span class="t-val" id="tempSoc">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Dysk SSD</span>
+            <span class="t-val" id="tempSsd">--°C</span>
+          </div>
+          <div class="temp-chip">
+            <span class="t-name">Bateria</span>
+            <span class="t-val" id="tempBatt">--°C</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- BATTERY & POWER TELEMETRY -->
+      <article class="card" id="sec-battery" data-cat="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-green"></span>
+            <h2>Bateria i Zasilanie</h2>
+          </div>
+          <span class="card-pill" id="battStateBadge">—</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="battPctMain">--%</div>
+            <div class="hero-sub-line" id="battTimeSub">Obliczanie czasu...</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Kondycja</span><strong id="battHealthVal">--%</strong></div>
+            <div class="meta-pair"><span>Cykle</span><strong id="battCyclesVal">--</strong></div>
+          </div>
+        </div>
+
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill bg-green" id="battBarFill" style="width: 0%"></div>
+        </div>
+
+        <div class="metrics-mini-grid cols-3">
+          <div class="mini-stat">
+            <span class="m-label">Pobór mocy</span>
+            <span class="m-val" id="battSysWatts">-- W</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Wejście USB-C</span>
+            <span class="m-val" id="battInWatts">-- W</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label">Napięcie/Prąd</span>
+            <span class="m-val" id="battVoltAmp">--V / --A</span>
+          </div>
+        </div>
+
+        <div class="top-procs-block" id="btDevicesBlock">
+          <div class="top-procs-header">
+            <span id="btDevicesCountLabel">Baterie Bluetooth (0)</span>
+            <span class="top-procs-cols">Poziom naładowania</span>
+          </div>
+          <div class="top-procs-list" id="btDevicesList"></div>
+        </div>
+      </article>
+
+      <!-- DISK SPACE (SSD / HDD) & SYSTEM JUNK CLEANER (CCleaner / Mac Sai Style) -->
+      <article class="card" id="sec-disk" data-cat="disk" data-also="power">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-dot bg-purple"></span>
+            <h2>Dysk (<span id="diskName">Macintosh HD</span>) &amp; Pojemność</h2>
+          </div>
+          <span class="card-pill" id="diskPctBadge">0% zajęte</span>
+        </div>
+
+        <div class="stat-hero-row">
+          <div>
+            <div class="hero-big-num" id="diskFreeMain">0.0 <small>GB wolne</small></div>
+            <div class="hero-sub-line" id="diskSubLine">Zajęte: 0.0 GB z 0.0 GB</div>
+          </div>
+          <div class="hero-right-meta">
+            <div class="meta-pair"><span>Temp. SSD</span><strong id="diskTempVal">--°C</strong></div>
+            <div class="meta-pair"><span>Uptime</span><strong id="sysUptimeVal">--</strong></div>
+          </div>
+        </div>
+
+        <div class="seg-bar-track">
+          <div class="seg-bar bg-purple" id="diskBarFill" style="width: 0%" title="Zajęte miejsce na dysku"></div>
+          <div class="seg-bar bg-amber" id="diskPurgeableFill" style="width: 0%" title="Miejsce do odzyskania (bufory APFS)"></div>
+        </div>
+
+        <div class="top-procs-list" id="volumesList"></div>
+
+        <!-- Disk Space Analyzer: Largest Directories & Largest Files -->
+        <div class="top-procs-block disk-usage-block" id="diskUsageBlock">
+          <div class="card-header cleaner-header">
+            <div class="card-title-group">
+              <span class="card-dot bg-sky"></span>
+              <h2>📊 Największe katalogi i pliki</h2>
+            </div>
+            <span class="card-pill" id="diskUsagePathBadge">~ (Katalog domowy)</span>
+          </div>
+
+          <div class="disk-scope-bar" id="diskScopeBar">
+            <div class="disk-scope-pills">
+              <button class="scope-pill active" type="button" data-disk-scope="" title="Przeskanuj katalog domowy użytkownika (~)">🏠 Domowy (~)</button>
+              <button class="scope-pill" type="button" data-disk-scope="/Applications" title="Przeskanuj zainstalowane aplikacje (/Applications)">🚀 Aplikacje</button>
+              <button class="scope-pill" type="button" data-disk-scope="~/Downloads" title="Przeskanuj katalog Pobrane (~/Downloads)">📥 Pobrane</button>
+              <button class="scope-pill" type="button" data-disk-scope="~/Desktop" title="Przeskanuj katalog Biurko (~/Desktop)">🖥 Biurko</button>
+              <button class="scope-pill refresh-pill" id="btnScanDiskUsage" type="button" title="Odśwież analizę zajętości dysku">🔄</button>
+            </div>
+          </div>
+
+          <div class="top-procs-header disk-sub-header">
+            <span id="topDirsHeaderLabel">📁 Największe katalogi (Top 10)</span>
+            <span class="top-procs-cols">Kliknij = wejdź • Rozmiar</span>
+          </div>
+          <div class="top-procs-list" id="topDirsList"></div>
+
+          <div class="top-procs-header disk-sub-header">
+            <span id="topFilesHeaderLabel">📄 Największe pliki (Top 10)</span>
+            <span class="top-procs-cols">Lokalizacja • Rozmiar</span>
+          </div>
+          <div class="top-procs-list" id="topFilesList"></div>
+        </div>
+      </article>
+
+      <!-- CCleaner / Mac Sai System Junk Cleaner Card -->
+      <article class="card" id="sec-cleaner" data-cat="cleaner">
+        <div class="top-procs-block cleaner-block" id="cleanerBlock">
+          <div class="card-header cleaner-header">
+            <div class="card-title-group">
+              <span class="card-dot bg-emerald"></span>
+              <h2>🧹 Czyszczenie Systemu (Smart Cleaner)</h2>
+            </div>
+            <span class="card-pill warn" id="junkTotalBadge">Skanowanie...</span>
+          </div>
+
+          <div class="cleaner-bar">
+            <div class="cleaner-bar-info">
+              <span class="cleaner-status" id="cleanerStatusText">Zaznacz kategorie śmieci do usunięcia</span>
+              <div class="speedtest-prog-track" id="cleanerProgTrack" hidden>
+                <div class="speedtest-prog-fill" id="cleanerProgFill" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="cleaner-btn-group">
+              <button class="action-btn subtle-btn" id="btnScanJunk" type="button" title="Przeskanuj ponownie katalogi pamięci podręcznej, logów i Kosza">🔍 Skanuj</button>
+              <button class="action-btn emerald-btn" id="btnCleanJunk" type="button" title="Usuń zaznaczone pliki tymczasowe, cache aplikacji, logi i opróżnij Kosz">🧹 Wyczyść</button>
+            </div>
+          </div>
+
+          <div class="top-procs-list" id="junkCategoriesList"></div>
+
+          <div class="quick-action-bar" style="margin-top: 4px;">
+            <span class="quick-action-status" id="cleanerDnsStatus">Szybkie czyszczenie pamięci podręcznej DNS i buforów</span>
+            <button class="action-btn emerald-btn" id="btnCleanRamAlt" type="button" title="Opróżnij pamięć podręczną DNS (dscacheutil) i odśwież bufory RAM">🧹 Wyczyść RAM i DNS</button>
+          </div>
+        </div>
+      </article>
+
+    </main>
+  </div>
+
+  <!-- Modern Floating Dark-Glass Tooltip (Variant A) -->
+  <div class="custom-tooltip" id="customTooltip" hidden>
+    <div class="tooltip-header">
+      <span class="tooltip-title" id="tooltipTitle"></span>
+    </div>
+    <div class="tooltip-desc" id="tooltipDesc"></div>
+    <div class="tooltip-hint" id="tooltipHint" hidden></div>
+  </div>
+
+  
+
+  <!-- Live E2E HUD Banner -->
+  <div id="e2eBanner">
+    <div class="e2e-row">
+      <span class="e2e-title" id="e2eStatus">🧪 Testy E2E w toku...</span>
+      <span class="e2e-count" id="e2eCount">0 / 0</span>
+    </div>
+  </div>
+
+  <!-- Inlined App Logic -->
+  <script>
+const $ = (id) => document.getElementById(id);
+
+const esc = (s) =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+
+const HISTORY_LEN = 45;
+const cpuHistory = new Array(HISTORY_LEN).fill(0);
+const netDownHistory = new Array(HISTORY_LEN).fill(0);
+const netUpHistory = new Array(HISTORY_LEN).fill(0);
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 22; // ~138.23
+
+function setRing(el, percent) {
+  if (!el) return;
+  const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+  const offset = RING_CIRCUMFERENCE * (1 - clamped / 100);
+  el.style.strokeDashoffset = offset.toFixed(2);
+}
+
+function fmtBytes(bytes, decimals = 1) {
+  const b = Number(bytes) || 0;
+  if (b <= 0) return '0 B';
+  const k = 1024;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(b) / Math.log(k)));
+  const val = b / Math.pow(k, i);
+  return `${val.toFixed(i === 0 ? 0 : decimals)} ${units[i]}`;
+}
+
+function fmtGB(bytes, decimals = 1) {
+  const gb = (Number(bytes) || 0) / (1024 * 1024 * 1024);
+  return `${gb.toFixed(decimals)} GB`;
+}
+
+function fmtSpeedParts(bytesPerSec) {
+  const bps = Number(bytesPerSec) || 0;
+  if (bps >= 1024 * 1024) {
+    return {
+      num: (bps / (1024 * 1024)).toFixed(2),
+      unit: 'MB/s',
+      short: `${(bps / (1024 * 1024)).toFixed(1)} MB/s`,
+    };
+  }
+  if (bps >= 1024) {
+    return {
+      num: (bps / 1024).toFixed(1),
+      unit: 'KB/s',
+      short: `${Math.round(bps / 1024)} KB/s`,
+    };
+  }
+  return {
+    num: String(Math.round(bps)),
+    unit: 'B/s',
+    short: `${Math.round(bps)} B/s`,
+  };
+}
+
+function fmtUptime(sec) {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function tempClass(tempC) {
+  if (!tempC || tempC <= 0) return '';
+  if (tempC >= 80) return 'hot';
+  if (tempC >= 62) return 'warm';
+  return 'cool';
+}
+
+function applyTempEl(el, tempC, prefix = '') {
+  if (!el) return;
+  if (!tempC || tempC <= 0) {
+    el.textContent = `${prefix}--°C`;
+    el.className = 't-val';
+    return;
+  }
+  el.textContent = `${prefix}${tempC.toFixed(1)}°C`;
+  el.className = `t-val ${tempClass(tempC)}`;
+}
+
+function drawSparkline(canvas, seriesList, maxFloor = 100) {
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width || 310;
+  const h = rect.height || 42;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 2; i++) {
+    const y = (h / 3) * i;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  let peak = maxFloor;
+  for (const s of seriesList) {
+    for (const v of s.data) {
+      if (v > peak) peak = v;
+    }
+  }
+  if (peak <= 0) peak = 1;
+
+  for (const s of seriesList) {
+    const pts = s.data;
+    const len = pts.length;
+    if (len < 2) continue;
+
+    ctx.beginPath();
+    for (let i = 0; i < len; i++) {
+      const x = (i / (len - 1)) * w;
+      const y = h - 3 - Math.min(1, Math.max(0, pts[i] / peak)) * (h - 7);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = s.stroke;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    if (s.fill) {
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, s.fillTop);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
+function applyWindowModeUI(desktopWidgetMode, compactMode) {
+  if (typeof desktopWidgetMode === 'boolean') {
+    const isAlwaysOnTop = !desktopWidgetMode;
+    $('btnPin').classList.toggle('active', isAlwaysOnTop);
+    $('layerLabel').textContent = isAlwaysOnTop ? 'Przypięto' : 'Przypnij';
+  }
+  if (typeof compactMode === 'boolean') {
+    $('appShell').classList.toggle('compact-mode', compactMode);
+    $('btnCompact').classList.toggle('active', !compactMode);
+    $('compactLabel').textContent = compactMode ? 'Rozwiń' : 'Zwiń';
+    updateVisibleCards();
+  }
+}
+
+let currentFilter = 'dashboard';
+let procsSub = 'top-cpu';
+const recentlyKilledPids = new Map();
+const selectedJunkCats = new Set(['caches', 'dev', 'logs', 'trash', 'temp']);
+let latestJunkData = null;
+let isCleaningOrScanning = false;
+let latestDiskUsageData = null;
+let isScanningDiskUsageUI = false;
+let activeDiskScopePath = '';
+
+function fileIconForExt(ext) {
+  switch (String(ext || '').toLowerCase()) {
+    case 'dmg':
+    case 'iso':
+    case 'pkg':
+      return '💿';
+    case 'zip':
+    case 'tar':
+    case 'gz':
+    case 'tgz':
+    case '7z':
+    case 'rar':
+      return '📦';
+    case 'mp4':
+    case 'mov':
+    case 'mkv':
+    case 'avi':
+    case 'webm':
+      return '🎬';
+    case 'mp3':
+    case 'wav':
+    case 'flac':
+    case 'm4a':
+      return '🎵';
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif':
+    case 'webp':
+    case 'heic':
+    case 'icns':
+    case 'svg':
+      return '🖼️';
+    case 'db':
+    case 'sqlite':
+    case 'sqlite3':
+    case 'sql':
+      return '🗄️';
+    case 'js':
+    case 'ts':
+    case 'py':
+    case 'm':
+    case 'c':
+    case 'cpp':
+    case 'rs':
+    case 'go':
+    case 'json':
+    case 'html':
+    case 'css':
+      return '💻';
+    default:
+      return '📄';
+  }
+}
+
+function renderDiskUsage(usage) {
+  if (!usage || typeof usage !== 'object') return;
+  latestDiskUsageData = usage;
+
+  const badge = $('diskUsagePathBadge');
+  if (badge) {
+    badge.textContent = usage.displayPath || '~ (Katalog domowy)';
+    badge.title = usage.rootPath || '';
+  }
+
+  const dirs = Array.isArray(usage.topDirs) ? usage.topDirs : [];
+  const files = Array.isArray(usage.topFiles) ? usage.topFiles : [];
+
+  if ($('topDirsHeaderLabel')) {
+    $('topDirsHeaderLabel').textContent = `📁 Największe katalogi (${dirs.length})`;
+  }
+  if ($('topFilesHeaderLabel')) {
+    $('topFilesHeaderLabel').textContent = `📄 Największe pliki (${files.length})`;
+  }
+
+  const dirsEl = $('topDirsList');
+  if (dirsEl) {
+    if (dirs.length === 0) {
+      dirsEl.innerHTML = `<div class="port-empty">Brak podkatalogów w tej lokalizacji</div>`;
+    } else {
+      const maxDirB = Math.max(1024, ...dirs.map((d) => Number(d.bytes) || 0));
+      dirsEl.innerHTML = dirs
+        .map((d, idx) => {
+          const b = Number(d.bytes) || 0;
+          const barW = Math.min(100, Math.max(3, (b / maxDirB) * 100));
+          const icon = d.isApp ? '🚀' : '📁';
+          const valColor = b >= 1024 * 1024 * 1024 ? '#fcd34d' : '#7dd3fc';
+          return `
+          <div class="proc-row dir-row-clickable" data-drill-dir="${esc(d.path)}" title="Kliknij, aby wejść w głąb katalogu: ${esc(d.shortPath)}">
+            <div class="proc-bar-bg disk-dir-bar" style="width: ${barW.toFixed(1)}%"></div>
+            <div class="proc-left">
+              <span class="proc-rank">#${idx + 1}</span>
+              <span class="proc-icon-fallback">${icon}</span>
+              <div class="junk-text-wrap">
+                <span class="proc-name">${esc(d.name)}</span>
+                <span class="junk-sub">${esc(d.shortPath)}</span>
+              </div>
+            </div>
+            <div class="proc-right">
+              <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(d.path)}" title="Pokaż w Finderze: ${esc(d.shortPath)}">📂</button>
+            </div>
+          </div>`;
+        })
+        .join('');
+    }
+  }
+
+  const filesEl = $('topFilesList');
+  if (filesEl) {
+    if (files.length === 0) {
+      filesEl.innerHTML = `<div class="port-empty">Brak dużych plików w tej lokalizacji</div>`;
+    } else {
+      const maxFileB = Math.max(1024, ...files.map((f) => Number(f.bytes) || 0));
+      filesEl.innerHTML = files
+        .map((f, idx) => {
+          const b = Number(f.bytes) || 0;
+          const barW = Math.min(100, Math.max(3, (b / maxFileB) * 100));
+          const valColor = b >= 500 * 1024 * 1024 ? '#fda4af' : b >= 100 * 1024 * 1024 ? '#fcd34d' : '#d8b4fe';
+          return `
+          <div class="proc-row" title="${esc(f.shortPath)} (${esc(fmtBytes(b, 2))})">
+            <div class="proc-bar-bg disk-file-bar" style="width: ${barW.toFixed(1)}%"></div>
+            <div class="proc-left">
+              <span class="proc-rank">#${idx + 1}</span>
+              <span class="proc-icon-fallback">${fileIconForExt(f.ext)}</span>
+              <div class="junk-text-wrap">
+                <span class="proc-name">${esc(f.name)}</span>
+                <span class="junk-sub">${esc(f.shortPath)}</span>
+              </div>
+            </div>
+            <div class="proc-right">
+              <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(f.path)}" title="Pokaż plik w Finderze: ${esc(f.shortPath)}">📂</button>
+            </div>
+          </div>`;
+        })
+        .join('');
+    }
+  }
+}
+
+function junkCatIcon(id) {
+  switch (id) {
+    case 'caches':
+      return '🗂️';
+    case 'dev':
+      return '📦';
+    case 'logs':
+      return '📝';
+    case 'trash':
+      return '🗑️';
+    case 'temp':
+      return '🌐';
+    default:
+      return '🧹';
+  }
+}
+
+function renderJunkCleaner(junk) {
+  if (!junk || !Array.isArray(junk.categories)) return;
+  latestJunkData = junk;
+
+  const totalBytes = Number(junk.totalBytes) || 0;
+  let selectedBytes = 0;
+  for (const c of junk.categories) {
+    if (selectedJunkCats.has(c.id)) {
+      selectedBytes += Number(c.bytes) || 0;
+    }
+  }
+
+  const hudBadge = $('hudJunkBadge');
+  if (hudBadge) {
+    hudBadge.textContent = totalBytes > 1024 * 1024 ? fmtBytes(totalBytes, 0) : 'Cleaner';
+  }
+
+  const totalBadge = $('junkTotalBadge');
+  if (totalBadge) {
+    totalBadge.textContent = `Do odzyskania: ${fmtBytes(selectedBytes, 1)}`;
+    totalBadge.className = selectedBytes > 50 * 1024 * 1024 ? 'card-pill warn' : 'card-pill good';
+  }
+
+  const btnClean = $('btnCleanJunk');
+  if (btnClean && !isCleaningOrScanning) {
+    btnClean.textContent = selectedBytes > 0 ? `🧹 Wyczyść (${fmtBytes(selectedBytes, 0)})` : '🧹 Wyczyść';
+  }
+
+  const listEl = $('junkCategoriesList');
+  if (!listEl) return;
+
+  const maxCatBytes = Math.max(10 * 1024 * 1024, ...junk.categories.map((c) => Number(c.bytes) || 0));
+  listEl.innerHTML = junk.categories
+    .map((c) => {
+      const b = Number(c.bytes) || 0;
+      const checked = selectedJunkCats.has(c.id) ? 'checked' : '';
+      const barW = b > 0 ? Math.min(100, Math.max(3, (b / maxCatBytes) * 100)) : 0;
+      const valColor = b > 100 * 1024 * 1024 ? '#fcd34d' : b > 0 ? '#6ee7b7' : 'var(--text-muted)';
+      return `
+      <label class="proc-row junk-row" data-junk-id="${esc(c.id)}">
+        <div class="proc-bar-bg ram-bar" style="width: ${barW.toFixed(1)}%"></div>
+        <div class="proc-left">
+          <input type="checkbox" class="junk-check" data-junk-check="${esc(c.id)}" ${checked} />
+          <span class="proc-icon-fallback">${junkCatIcon(c.id)}</span>
+          <div class="junk-text-wrap">
+            <span class="proc-name">${esc(c.title)}</span>
+            <span class="junk-sub" title="${esc(c.subtitle)}">${esc(c.subtitle)}</span>
+          </div>
+        </div>
+        <div class="proc-right">
+          <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+        </div>
+      </label>`;
+    })
+    .join('');
+}
+
+function applyCaffeinateUI(active) {
+  const btn = $('btnCaffeinate');
+  if (!btn) return;
+  const isOn = Boolean(active);
+  btn.classList.toggle('active', isOn);
+  btn.title = isOn
+    ? 'Tryb Caffeinate: AKTYWNY (Mac i ekran nie zasną — kliknij, aby wyłączyć)'
+    : 'Tryb Caffeinate: blokuj usypianie ekranu i Maca (Wył.)';
+}
+
+function btKindIcon(kind) {
+  switch (kind) {
+    case 'earbud-left':
+      return '🎧L';
+    case 'earbud-right':
+      return '🎧P';
+    case 'case':
+      return '🔋';
+    case 'headphones':
+      return '🎧';
+    case 'mouse':
+      return '🖱️';
+    case 'keyboard':
+      return '⌨️';
+    case 'gamepad':
+      return '🎮';
+    case 'pencil':
+      return '✏️';
+    default:
+      return '🔋';
+  }
+}
+
+function ringStrokeClassForBattery(pct, charging) {
+  if (charging) return 'ring-fg stroke-amber';
+  if (pct <= 15) return 'ring-fg stroke-rose';
+  if (pct <= 25) return 'ring-fg stroke-amber';
+  return 'ring-fg stroke-emerald';
+}
+
+function shortBtName(devItem) {
+  if (devItem && typeof devItem === 'object') {
+    const base = String(devItem.baseName || devItem.name || 'Bluetooth')
+      .replace(/^soundcore\s+/i, '')
+      .replace(/^Apple\s+/i, '')
+      .trim();
+    const shortBase = base.length <= 7 ? base : base.slice(0, 6);
+    if (devItem.part === 'left') return `Lewa (${shortBase})`;
+    if (devItem.part === 'right') return `Prawa (${shortBase})`;
+    if (devItem.part === 'case') return `Etui (${shortBase})`;
+  }
+  const raw = String((devItem && devItem.name) || devItem || 'Bluetooth').trim();
+  if (raw.length <= 10) return raw;
+  const cleaned = raw
+    .replace(/^soundcore\s+/i, '')
+    .replace(/^Apple\s+/i, '')
+    .replace(/\s+Keyboard$/i, '')
+    .replace(/\s+Mouse$/i, '')
+    .replace(/\s+Trackpad$/i, '');
+  return cleaned.length <= 11 ? cleaned : cleaned.slice(0, 10) + '…';
+}
+
+function renderProcIcon(iconDataUrl, name) {
+  if (iconDataUrl && String(iconDataUrl).startsWith('data:image/')) {
+    return `<img class="proc-icon" src="${esc(iconDataUrl)}" alt="" />`;
+  }
+  const initial = String(name || '?').replace(/^[^a-zA-Z0-9]+/, '').slice(0, 2).toUpperCase() || '⚙';
+  return `<span class="proc-icon-fallback">${esc(initial)}</span>`;
+}
+
+function updateVisibleCards() {
+  const shell = $('appShell');
+  shell.setAttribute('data-view', currentFilter);
+
+  const isDashboard = currentFilter === 'dashboard';
+
+  // 1. Tab Bar active states
+  document.querySelectorAll('.nav-tab').forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.tab === currentFilter);
+  });
+
+  // 2. Rings Panel vs Cards Container toggle
+  const ringsPanel = $('ringsPanel');
+  const cardsContainer = $('cardsContainer');
+  if (ringsPanel) {
+    ringsPanel.classList.toggle('hidden-for-cards', !isDashboard);
+  }
+  if (cardsContainer) {
+    cardsContainer.classList.toggle('hidden-for-dashboard', isDashboard);
+  }
+
+  // 3. Procs subnav toggle & states
+  const procsSubnav = $('procsSubnav');
+  if (procsSubnav) {
+    procsSubnav.hidden = (currentFilter !== 'procs');
+    document.querySelectorAll('[data-procs-sub]').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.procsSub === procsSub);
+    });
+  }
+
+  // 4. Cards visibility
+  document.querySelectorAll('.card').forEach((card) => {
+    if (isDashboard) {
+      card.hidden = true;
+      return;
+    }
+    const id = card.id;
+    if (currentFilter === 'procs') {
+      if (procsSub === 'top-cpu') card.hidden = (id !== 'sec-cpu');
+      else if (procsSub === 'top-ram') card.hidden = (id !== 'sec-ram');
+      else if (procsSub === 'dev') card.hidden = (id !== 'sec-ports');
+      else card.hidden = true;
+    } else if (currentFilter === 'disk') {
+      card.hidden = (id !== 'sec-disk');
+    } else if (currentFilter === 'cleaner') {
+      card.hidden = (id !== 'sec-cleaner');
+    } else if (currentFilter === 'network') {
+      card.hidden = (id !== 'sec-net' && id !== 'sec-wifi');
+    } else if (currentFilter === 'sensors' || currentFilter === 'power') {
+      card.hidden = (id !== 'sec-gpu' && id !== 'sec-battery');
+    } else {
+      card.hidden = false;
+    }
+  });
+
+  // 5. Ring tiles & Strip item active highlights
+  document.querySelectorAll('.hud-tile').forEach((tile) => {
+    const jump = tile.dataset.jump;
+    let isActive = false;
+    if (currentFilter === 'procs') {
+      isActive = (jump === procsSub) || (jump === 'top-cpu' && procsSub === 'top-cpu') || (jump === 'top-ram' && procsSub === 'top-ram');
+    } else if (currentFilter === 'sensors') {
+      isActive = (jump === 'power');
+    } else if (currentFilter === 'network') {
+      isActive = (jump === 'network');
+    } else if (currentFilter === 'disk') {
+      isActive = (jump === 'disk');
+    }
+    tile.classList.toggle('active', isActive);
+  });
+
+  const stripPortsItem = $('stripPortsItem');
+  if (stripPortsItem) {
+    stripPortsItem.classList.toggle('active', currentFilter === 'procs' && procsSub === 'dev');
+  }
+
+  const stripDiskItem = $('stripDiskItem');
+  if (stripDiskItem) {
+    stripDiskItem.classList.toggle('active', currentFilter === 'disk');
+  }
+
+  const diskHudBar = $('diskHudBar');
+  if (diskHudBar) {
+    diskHudBar.classList.toggle('active', currentFilter === 'disk');
+  }
+}
+
+function setProcsSub(sub) {
+  currentFilter = 'procs';
+  procsSub = sub;
+  updateVisibleCards();
+  const container = $('cardsContainer');
+  if (container) container.scrollTop = 0;
+  const rings = $('ringsPanel');
+  if (rings) rings.scrollTop = 0;
+}
+
+function setActiveTab(target, sub = null) {
+  if (target === 'dashboard') {
+    currentFilter = 'dashboard';
+  } else if (target === 'procs') {
+    currentFilter = 'procs';
+    if (sub) procsSub = sub;
+  } else if (target === 'top-cpu') {
+    currentFilter = 'procs';
+    procsSub = 'top-cpu';
+  } else if (target === 'top-ram') {
+    currentFilter = 'procs';
+    procsSub = 'top-ram';
+  } else if (target === 'dev') {
+    currentFilter = 'procs';
+    procsSub = 'dev';
+  } else if (target === 'disk') {
+    currentFilter = 'disk';
+    if (!latestDiskUsageData && !isScanningDiskUsageUI) {
+      triggerDiskUsageScan('');
+    }
+  } else if (target === 'cleaner') {
+    currentFilter = 'cleaner';
+  } else if (target === 'network') {
+    currentFilter = 'network';
+  } else if (target === 'power' || target === 'sensors') {
+    currentFilter = 'sensors';
+  } else {
+    currentFilter = target;
+  }
+  updateVisibleCards();
+  const container = $('cardsContainer');
+  if (container) container.scrollTop = 0;
+  const rings = $('ringsPanel');
+  if (rings) rings.scrollTop = 0;
+}
+
+function renderTelemetry(snap) {
+  if (!snap) return;
+  $('liveDot').classList.add('ok');
+
+  const { cpu, memory, network, wifi, gpu, temps, battery, disk, dev, bluetooth } = snap;
+
+  if (cpu?.model && $('headerChip')) {
+    $('headerChip').textContent = cpu.model.replace('Apple ', '');
+  }
+  applyWindowModeUI(snap.desktopWidgetMode, snap.compactMode);
+  if (typeof snap.caffeinateActive === 'boolean') {
+    applyCaffeinateUI(snap.caffeinateActive);
+  }
+
+  // Low Battery Warning Theme (<10% / <=10% while discharging)
+  const macBattPct = battery?.percent ?? 100;
+  const isLowBattWarning = macBattPct <= 10 && !battery?.charging;
+  $('appShell').classList.toggle('low-battery-warning', isLowBattWarning);
+
+  // 1. Mini HUD 4 Gauges (macOS System Mode)
+  const cpuPct = Math.round(cpu?.totalPercent || 0);
+  setRing($('ringCpu'), cpuPct);
+  $('hudCpuPct').textContent = `${cpuPct}%`;
+  $('hudCpuTemp').textContent = temps?.cpu > 0 ? `${temps.cpu.toFixed(0)}°C` : `${cpu?.coreCount || 8}C`;
+
+  const ramPct = Math.round(memory?.percent || 0);
+  setRing($('ringRam'), ramPct);
+  $('hudRamPct').textContent = `${ramPct}%`;
+  $('hudRamUsed').textContent = fmtGB(memory?.used || 0, 1);
+
+  const gpuPct = Math.round(gpu?.deviceUtilization || 0);
+  setRing($('ringGpu'), gpuPct);
+  $('hudGpuPct').textContent = `${gpuPct}%`;
+  $('hudGpuTemp').textContent = temps?.gpu > 0 ? `${temps.gpu.toFixed(0)}°C` : 'GPU';
+
+  const wifiPct = Math.round(wifi?.qualityPercent || 0);
+  setRing($('ringWifi'), wifiPct);
+  $('hudWifiPct').textContent = `${wifiPct}%`;
+  $('hudWifiDbm').textContent = wifi?.rssi ? `${wifi.rssi}dBm` : 'Brak';
+
+  // 1b. Mini HUD 4 Gauges (macOS Battery + Bluetooth Widget Mode)
+  const ringBatt0 = $('ringBatt0');
+  if (ringBatt0) {
+    setRing(ringBatt0, macBattPct);
+    ringBatt0.setAttribute('class', ringStrokeClassForBattery(macBattPct, battery?.charging));
+    $('hudBattIcon0').textContent = battery?.charging ? '⚡' : '💻';
+    $('hudBattPct0').textContent = `${macBattPct}%`;
+    $('hudBattLabel0').textContent = 'MacBook';
+  }
+  const btList = Array.isArray(bluetooth) ? bluetooth : [];
+  for (let i = 1; i <= 3; i++) {
+    const devItem = btList[i - 1];
+    const slotEl = $(`btSlot${i}`);
+    const ringEl = $(`ringBatt${i}`);
+    const iconEl = $(`hudBattIcon${i}`);
+    const pctEl = $(`hudBattPct${i}`);
+    const labelEl = $(`hudBattLabel${i}`);
+    if (!slotEl || !ringEl) continue;
+
+    if (devItem) {
+      const p = Math.max(0, Math.min(100, Number(devItem.percent) || 0));
+      slotEl.classList.remove('empty-slot');
+      slotEl.title = `${devItem.name}: ${p}%${devItem.charging ? ' (Ładowanie)' : ''}`;
+      setRing(ringEl, p);
+      ringEl.setAttribute('class', ringStrokeClassForBattery(p, devItem.charging));
+      iconEl.textContent = btKindIcon(devItem.kind);
+      pctEl.textContent = `${p}%`;
+      labelEl.textContent = shortBtName(devItem);
+    } else {
+      slotEl.classList.add('empty-slot');
+      slotEl.title = 'Brak kolejnego urządzenia Bluetooth z raportowaniem baterii';
+      setRing(ringEl, 0);
+      ringEl.setAttribute('class', 'ring-fg stroke-emerald');
+      iconEl.textContent = '';
+      pctEl.textContent = '—';
+      labelEl.textContent = 'Bluetooth';
+    }
+  }
+
+  // 1c. Always-Visible Disk Capacity Bar in Top HUD
+  const diskPct = Math.min(100, Math.max(0, Number(disk?.percent) || 0));
+  if ($('hudDiskName')) {
+    const rawDiskName = disk?.name || 'SSD';
+    $('hudDiskName').textContent = rawDiskName.length > 10 ? 'Dysk SSD' : rawDiskName;
+  }
+  if ($('hudDiskCap')) {
+    $('hudDiskCap').textContent = `Wolne: ${fmtGB(disk?.free || 0, 1).replace(' GB', '')} / ${fmtGB(disk?.total || 0, 0)} (${diskPct.toFixed(0)}%)`;
+  }
+  if ($('hudDiskBarFill')) {
+    $('hudDiskBarFill').style.width = `${diskPct.toFixed(1)}%`;
+  }
+
+  // 2. Mini Strip
+  const downParts = fmtSpeedParts(network?.rxBytesPerSec || 0);
+  const upParts = fmtSpeedParts(network?.txBytesPerSec || 0);
+  $('stripDown').textContent = downParts.short;
+  $('stripUp').textContent = upParts.short;
+  $('stripPing').textContent = network?.pingMs != null ? `${network.pingMs}ms` : '--';
+  $('stripBattIcon').textContent = battery?.charging ? '⚡' : (battery?.plugged ? '🔌' : '🔋');
+  $('stripBatt').textContent = battery?.percent != null ? `${battery.percent}%` : '--%';
+  $('stripDisk').textContent = fmtGB(disk?.free || 0, 0);
+  const portsList = Array.isArray(dev?.ports) ? dev.ports : [];
+  if ($('stripPorts')) {
+    $('stripPorts').textContent = `${portsList.length}`;
+  }
+
+  // 2b. Developer & Localhost Port Inspector Card
+  const dockerInfo = dev?.docker || { running: false, memoryBytes: 0, engine: 'Docker' };
+  const dockerBadge = $('dockerStateBadge');
+  if (dockerBadge) {
+    if (dockerInfo.running) {
+      dockerBadge.textContent = `${dockerInfo.engine}: ${fmtBytes(dockerInfo.memoryBytes, 1)}`;
+      dockerBadge.className = 'card-pill good';
+    } else {
+      const devPortCount = portsList.filter((p) => p.isDevPort).length;
+      dockerBadge.textContent = devPortCount > 0 ? `Dev: ${devPortCount} aktywne` : 'Docker: Wył.';
+      dockerBadge.className = devPortCount > 0 ? 'card-pill good' : 'card-pill';
+    }
+  }
+  if ($('portsCountLabel')) {
+    $('portsCountLabel').textContent = `Nasłuchujące porty TCP (${portsList.length})`;
+  }
+  if ($('procsPortsCount')) {
+    $('procsPortsCount').textContent = portsList.length;
+  }
+  if ($('portsList')) {
+    if (portsList.length === 0) {
+      $('portsList').innerHTML = `<div class="port-empty">Brak aktywnych nasłuchujących portów TCP</div>`;
+    } else {
+      $('portsList').innerHTML = portsList
+        .map((pt) => {
+          const badgeClass = pt.isDevPort ? 'port-badge dev-port' : 'port-badge';
+          return `
+          <div class="proc-row">
+            <div class="proc-left">
+              <span class="${badgeClass}">:${esc(pt.port)}</span>
+              ${renderProcIcon(pt.icon, pt.name)}
+              <span class="proc-name" title="${esc(pt.name)} (PID ${esc(pt.pid)})">${esc(pt.name)}</span>
+              <span class="proc-pid">${esc(pt.pid)}</span>
+            </div>
+            <div class="proc-right">
+              <span class="proc-sub">${esc(pt.address)}</span>
+              <span class="proc-sub">${esc(fmtBytes(pt.memBytes, 0))}</span>
+              <button class="proc-kill-btn" type="button" data-kill-pid="${esc(pt.pid)}" data-kill-name="${esc(pt.name)} (:${esc(pt.port)})" title="Zwolnij port :${esc(pt.port)} — zakończ ${esc(pt.name)} (PID ${esc(pt.pid)})">✕</button>
+            </div>
+          </div>`;
+        })
+        .join('');
+    }
+  }
+
+  // 3. Network Card
+  $('netIpBadge').textContent = `${network?.interface || 'en0'} • ${network?.ip || '—'}`;
+  $('netDownMain').innerHTML = `${esc(downParts.num)} <small>${esc(downParts.unit)}</small>`;
+  $('netUpMain').innerHTML = `${esc(upParts.num)} <small>${esc(upParts.unit)}</small>`;
+  $('netDownMbps').textContent = `${(network?.rxMbps || 0).toFixed(2)} Mbps • ${fmtBytes(network?.totalRxBytes || 0, 1)}`;
+  $('netUpMbps').textContent = `${(network?.txMbps || 0).toFixed(2)} Mbps • ${fmtBytes(network?.totalTxBytes || 0, 1)}`;
+  $('netPingLabel').textContent = network?.pingMs != null ? `Ping: ${network.pingMs} ms` : 'Ping: ...';
+
+  netDownHistory.push((network?.rxBytesPerSec || 0) / 1024);
+  if (netDownHistory.length > HISTORY_LEN) netDownHistory.shift();
+  netUpHistory.push((network?.txBytesPerSec || 0) / 1024);
+  if (netUpHistory.length > HISTORY_LEN) netUpHistory.shift();
+
+  drawSparkline(
+    $('canvasNet'),
+    [
+      {
+        data: netDownHistory,
+        stroke: '#22c55e',
+        fill: true,
+        fillTop: 'rgba(34, 197, 94, 0.28)',
+      },
+      {
+        data: netUpHistory,
+        stroke: '#38bdf8',
+        fill: false,
+      },
+    ],
+    64
+  );
+
+  // 4. Wi-Fi Card
+  const qBadge = $('wifiQualityBadge');
+  qBadge.textContent = wifi?.ssid ? `${wifi.ssid} • ${wifi.label}` : `Jakość: ${wifi?.label || '—'}`;
+  qBadge.className = `card-pill ${wifiPct >= 70 ? 'good' : wifiPct >= 40 ? 'warn' : 'crit'}`;
+
+  const barsEl = $('wifiBars');
+  if (barsEl) {
+    const barNodes = barsEl.querySelectorAll('.w-bar');
+    barNodes.forEach((b, idx) => {
+      b.classList.toggle('on', idx < (wifi?.bars || 0));
+    });
+  }
+
+  $('wifiPctVal').textContent = `${wifiPct}%`;
+  $('wifiDbmVal').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
+  const bandInfo = [];
+  if (wifi?.band && wifi.band !== '—') bandInfo.push(wifi.band);
+  if (wifi?.channel) bandInfo.push(`Kanał ${wifi.channel}`);
+  if (wifi?.widthMHz) bandInfo.push(`${wifi.widthMHz} MHz`);
+  $('wifiBandLine').textContent = bandInfo.length > 0 ? bandInfo.join(' • ') : `Interfejs ${wifi?.interface || 'en0'}`;
+  $('wifiTxRate').textContent = wifi?.txRate ? Math.round(wifi.txRate) : 0;
+  $('wifiRssi').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
+  $('wifiNoise').textContent = wifi?.noise ? `${wifi.noise} dBm` : '-- dBm';
+  $('wifiSnr').textContent = wifi?.snr ? `+${wifi.snr} dB` : '-- dB';
+
+  // 5. CPU Card & Top 10 CPU Processes
+  const coreDesc =
+    cpu?.pCores && cpu?.eCores
+      ? `${cpu.model} (${cpu.pCores}P+${cpu.eCores}E)`
+      : `${cpu?.model || 'CPU'} (${cpu?.coreCount || 0}C)`;
+  $('cpuModelBadge').textContent = coreDesc;
+  $('cpuTotalMain').textContent = `${(cpu?.totalPercent || 0).toFixed(1)}%`;
+  $('cpuBreakdown').textContent = `User: ${(cpu?.userPercent || 0).toFixed(1)}% • Sys: ${(cpu?.sysPercent || 0).toFixed(1)}% • Idle: ${(cpu?.idlePercent || 0).toFixed(1)}%`;
+  $('cpuTempBadge').textContent = temps?.cpu > 0 ? `${temps.cpu.toFixed(1)}°C` : '--°C';
+  const lAvg = cpu?.loadAvg || [0, 0, 0];
+  $('cpuLoadBadge').textContent = `${Number(lAvg[0] || 0).toFixed(2)} / ${Number(lAvg[1] || 0).toFixed(2)}`;
+
+  cpuHistory.push(cpu?.totalPercent || 0);
+  if (cpuHistory.length > HISTORY_LEN) cpuHistory.shift();
+  drawSparkline(
+    $('canvasCpu'),
+    [
+      {
+        data: cpuHistory,
+        stroke: '#60a5fa',
+        fill: true,
+        fillTop: 'rgba(96, 165, 250, 0.3)',
+      },
+    ],
+    100
+  );
+
+  if (Array.isArray(cpu?.cores)) {
+    $('coresGrid').innerHTML = cpu.cores
+      .map(
+        (c) => `
+        <div class="core-pill">
+          <div class="core-top">
+            <span class="core-name type-${esc(c.type)}">${esc(c.label)}</span>
+            <span class="core-pct">${esc(c.percent)}%</span>
+          </div>
+          <div class="core-bar-bg">
+            <div class="core-bar-fg type-${esc(c.type)}" style="width: ${Math.min(100, Math.max(0, Number(c.percent) || 0))}%"></div>
+          </div>
+        </div>`
+      )
+      .join('');
+  }
+
+  if (Array.isArray(cpu?.topProcesses) && $('topCpuList')) {
+    const maxCpu = Math.max(20, ...(cpu.topProcesses.map((p) => Number(p.cpuPercent) || 0)));
+    $('topCpuList').innerHTML = cpu.topProcesses
+      .map((p) => {
+        const barW = Math.min(100, Math.max(2, ((Number(p.cpuPercent) || 0) / maxCpu) * 100));
+        return `
+        <div class="proc-row">
+          <div class="proc-bar-bg cpu-bar" style="width: ${barW.toFixed(1)}%"></div>
+          <div class="proc-left">
+            <span class="proc-rank">#${esc(p.rank)}</span>
+            ${renderProcIcon(p.icon, p.name)}
+            <span class="proc-name" title="${esc(p.name)} (PID ${esc(p.pid)})">${esc(p.name)}</span>
+            <span class="proc-pid">${esc(p.pid)}</span>
+          </div>
+          <div class="proc-right">
+            <span class="proc-sub">${esc(fmtBytes(p.memBytes, 0))}</span>
+            <span class="proc-primary cpu-val">${esc(Number(p.cpuPercent || 0).toFixed(1))}%</span>
+            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="Zakończ proces ${esc(p.name)} (PID ${esc(p.pid)}) • Kliknij z ⌥ Option aby wymusić (kill -9)">✕</button>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  // 6. Memory (RAM) Card & Top 10 RAM Processes
+  const pLevel = memory?.pressureLevel || 1;
+  const pBadge = $('ramPressureBadge');
+  if (pLevel >= 4) {
+    pBadge.textContent = 'Ciśnienie: Kryt.';
+    pBadge.className = 'card-pill crit';
+  } else if (pLevel >= 2) {
+    pBadge.textContent = 'Ciśnienie: Średnie';
+    pBadge.className = 'card-pill warn';
+  } else {
+    pBadge.textContent = 'Ciśnienie: Niskie';
+    pBadge.className = 'card-pill good';
+  }
+
+  const totalMem = memory?.total || 1;
+  $('ramMainVal').innerHTML = `${esc(fmtGB(memory?.used || 0, 2).replace(' GB', ''))} <small>/ ${esc(fmtGB(totalMem, 1))}</small>`;
+  $('ramFreeSub').textContent = `Wolne: ${fmtGB(memory?.free || 0, 2)} • Cache: ${fmtGB(memory?.cached || 0, 2)}`;
+  $('ramPctBadge').textContent = `${(memory?.percent || 0).toFixed(1)}%`;
+  $('ramSwapBadge').textContent = `${fmtGB(memory?.swapUsed || 0, 1)} / ${fmtGB(memory?.swapTotal || 0, 1)}`;
+
+  const appW = Math.min(100, ((memory?.app || 0) / totalMem) * 100);
+  const wiredW = Math.min(100 - appW, ((memory?.wired || 0) / totalMem) * 100);
+  const compW = Math.min(100 - appW - wiredW, ((memory?.compressed || 0) / totalMem) * 100);
+  $('segApp').style.width = `${appW.toFixed(1)}%`;
+  $('segWired').style.width = `${wiredW.toFixed(1)}%`;
+  $('segComp').style.width = `${compW.toFixed(1)}%`;
+
+  $('ramAppVal').textContent = fmtGB(memory?.app || 0, 1);
+  $('ramWiredVal').textContent = fmtGB(memory?.wired || 0, 1);
+  $('ramCompVal').textContent = fmtGB(memory?.compressed || 0, 1);
+
+  if (Array.isArray(memory?.topProcesses) && $('topRamList')) {
+    const maxMem = Math.max(1, ...(memory.topProcesses.map((p) => Number(p.memBytes) || 0)));
+    $('topRamList').innerHTML = memory.topProcesses
+      .map((p) => {
+        const barW = Math.min(100, Math.max(3, ((Number(p.memBytes) || 0) / maxMem) * 100));
+        return `
+        <div class="proc-row">
+          <div class="proc-bar-bg ram-bar" style="width: ${barW.toFixed(1)}%"></div>
+          <div class="proc-left">
+            <span class="proc-rank">#${esc(p.rank)}</span>
+            ${renderProcIcon(p.icon, p.name)}
+            <span class="proc-name" title="${esc(p.name)} (PID ${esc(p.pid)})">${esc(p.name)}</span>
+            <span class="proc-pid">${esc(p.pid)}</span>
+          </div>
+          <div class="proc-right">
+            <span class="proc-sub">${esc(Number(p.memPercent || 0).toFixed(1))}%</span>
+            <span class="proc-primary ram-val">${esc(fmtBytes(p.memBytes, 1))}</span>
+            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="Zakończ proces ${esc(p.name)} (PID ${esc(p.pid)}) • Kliknij z ⌥ Option aby wymusić (kill -9)">✕</button>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  // 7. GPU & Temperatures Card
+  const tState = temps?.thermalState || 0;
+  const tBadge = $('thermalStateBadge');
+  if (tState === 0) {
+    tBadge.textContent = 'Termika: OK';
+    tBadge.className = 'card-pill good';
+  } else if (tState === 1) {
+    tBadge.textContent = 'Termika: Ciepło';
+    tBadge.className = 'card-pill warn';
+  } else {
+    tBadge.textContent = 'Termika: Gorąco';
+    tBadge.className = 'card-pill crit';
+  }
+
+  $('gpuMainVal').innerHTML = `${esc(gpuPct)}% <small>${esc(gpu?.model || 'GPU')}</small>`;
+  $('gpuSubLine').textContent = `Renderer: ${gpu?.rendererUtilization || 0}% • Tiler: ${gpu?.tilerUtilization || 0}%`;
+  $('gpuVramUsed').textContent = fmtBytes(gpu?.vramUsed || 0, 0);
+  $('gpuVramAlloc').textContent = fmtGB(gpu?.vramAlloc || 0, 2);
+  $('gpuBarFill').style.width = `${gpuPct}%`;
+
+  applyTempEl($('tempCpu'), temps?.cpu);
+  if (temps?.pCore > 0 || temps?.eCore > 0) {
+    const elPE = $('tempPE');
+    elPE.textContent = `${temps.pCore.toFixed(0)}° / ${temps.eCore.toFixed(0)}°C`;
+    elPE.className = `t-val ${tempClass(Math.max(temps.pCore, temps.eCore))}`;
+  }
+  applyTempEl($('tempGpu'), temps?.gpu);
+  applyTempEl($('tempSoc'), temps?.maxDie || temps?.soc);
+  applyTempEl($('tempSsd'), temps?.ssd);
+  applyTempEl($('tempBatt'), temps?.battery);
+
+  // 8. Battery & Power Card
+  const bPct = battery?.percent ?? 100;
+  const bBadge = $('battStateBadge');
+  if (battery?.charging) {
+    bBadge.textContent = `Ładowanie ⚡ (${battery.adapterWatts || 65}W)`;
+    bBadge.className = 'card-pill good';
+  } else if (battery?.plugged) {
+    bBadge.textContent = 'Zasilacz 🔌';
+    bBadge.className = 'card-pill good';
+  } else {
+    bBadge.textContent = 'Na baterii 🔋';
+    bBadge.className = bPct <= 20 ? 'card-pill crit' : 'card-pill warn';
+  }
+
+  $('battPctMain').textContent = `${bPct}%`;
+  if (battery?.minutesRemaining != null && battery.minutesRemaining > 0 && battery.minutesRemaining < 1500) {
+    const h = Math.floor(battery.minutesRemaining / 60);
+    const m = battery.minutesRemaining % 60;
+    const suffix = battery.charging ? 'do pełnego' : 'pozostało';
+    $('battTimeSub').textContent = `${h > 0 ? h + 'h ' : ''}${m}m ${suffix}`;
+  } else {
+    $('battTimeSub').textContent = battery?.charging
+      ? 'Ładowanie ogniwa'
+      : battery?.plugged
+      ? 'Zasilanie sieciowe'
+      : 'Praca na baterii';
+  }
+
+  $('battHealthVal').textContent = `${battery?.healthPercent || 100}% (${battery?.nominalCapacity || 0} mAh)`;
+  $('battCyclesVal').textContent = `${battery?.cycleCount || 0} cykli`;
+  $('battBarFill').style.width = `${Math.min(100, Math.max(0, bPct))}%`;
+
+  $('battSysWatts').textContent = battery?.systemLoadWatts > 0 ? `${battery.systemLoadWatts.toFixed(1)} W` : '-- W';
+  $('battInWatts').textContent = battery?.powerInWatts > 0 ? `${battery.powerInWatts.toFixed(1)} W` : '0.0 W';
+  $('battVoltAmp').textContent =
+    battery?.voltageV > 0 ? `${battery.voltageV.toFixed(1)}V / ${battery.amperageA.toFixed(1)}A` : '--V / --A';
+
+  if ($('btDevicesCountLabel')) {
+    $('btDevicesCountLabel').textContent = `Baterie Bluetooth (${btList.length})`;
+  }
+  if ($('btDevicesList')) {
+    if (btList.length === 0) {
+      $('btDevicesList').innerHTML = `<div class="port-empty">Brak połączonych akcesoriów Bluetooth z baterią</div>`;
+    } else {
+      $('btDevicesList').innerHTML = btList
+        .map((d) => {
+          const pct = Math.max(0, Math.min(100, Number(d.percent) || 0));
+          const valColor = pct <= 15 ? '#fda4af' : pct <= 25 ? '#fcd34d' : '#6ee7b7';
+          return `
+          <div class="proc-row">
+            <div class="proc-bar-bg ram-bar" style="width: ${pct}%"></div>
+            <div class="proc-left">
+              <span class="proc-icon-fallback">${btKindIcon(d.kind)}</span>
+              <span class="proc-name" title="${esc(d.name)}">${esc(d.name)}</span>
+            </div>
+            <div class="proc-right">
+              <span class="proc-sub">${d.charging ? '⚡ Ładowanie' : d.hfpShared ? 'Słuchawka BT (HFP)' : 'Połączono'}</span>
+              <span class="proc-primary" style="color: ${valColor}">${pct}%</span>
+            </div>
+          </div>`;
+        })
+        .join('');
+    }
+  }
+
+  // 9. Disk SSD/HDD & System Junk Cleaner Card
+  $('diskName').textContent = disk?.name || 'Macintosh HD';
+  $('diskPctBadge').textContent = `${(disk?.percent || 0).toFixed(1)}% zajęte`;
+  $('diskFreeMain').innerHTML = `${esc(fmtGB(disk?.free || 0, 1).replace(' GB', ''))} <small>GB wolne</small>`;
+  const purgeableBytes = Number(disk?.purgeable) || 0;
+  const purgeableTxt = purgeableBytes > 100 * 1024 * 1024 ? ` • Bufory APFS: ${fmtGB(purgeableBytes, 1)}` : '';
+  $('diskSubLine').textContent = `Zajęte: ${fmtGB(disk?.used || 0, 1)} z ${fmtGB(disk?.total || 0, 1)}${purgeableTxt}`;
+  $('diskTempVal').textContent = temps?.ssd > 0 ? `${temps.ssd.toFixed(1)}°C` : '--°C';
+  $('sysUptimeVal').textContent = fmtUptime(cpu?.uptime || 0);
+  const usedBarPct = Math.min(100, Math.max(0, disk?.percent || 0));
+  const purgeBarPct = disk?.total > 0 ? Math.min(100 - usedBarPct, (purgeableBytes / disk.total) * 100) : 0;
+  $('diskBarFill').style.width = `${usedBarPct.toFixed(1)}%`;
+  if ($('diskPurgeableFill')) {
+    $('diskPurgeableFill').style.width = `${purgeBarPct.toFixed(1)}%`;
+  }
+
+  if ($('volumesList')) {
+    const vols = Array.isArray(disk?.volumes) ? disk.volumes : [];
+    $('volumesList').innerHTML = vols
+      .map((v) => {
+        const vPct = v.total > 0 ? Math.min(100, Math.round((v.used / v.total) * 100)) : 0;
+        const icon = v.isInternal ? '💾' : '📀';
+        const kindLabel = v.isInternal ? 'Dysk systemowy' : `Dysk zewn. (${v.mountPoint})`;
+        return `
+        <div class="proc-row">
+          <div class="proc-bar-bg cpu-bar" style="width: ${vPct}%"></div>
+          <div class="proc-left">
+            <span class="proc-icon-fallback">${icon}</span>
+            <div class="junk-text-wrap">
+              <span class="proc-name">${esc(v.name)}</span>
+              <span class="junk-sub">${esc(kindLabel)} • Zajęte: ${fmtGB(v.used, 1)} / ${fmtGB(v.total, 1)} (${vPct}%)</span>
+            </div>
+          </div>
+          <div class="proc-right">
+            <span class="proc-primary" style="color: #d8b4fe">${fmtGB(v.free, 1)} wolne</span>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  // 10. Home Glance & System Status Overview
+  if ($('homeMacModel')) {
+    const rawModel = snap.cpu?.model || 'Apple Silicon';
+    $('homeMacModel').textContent = rawModel.replace(/^Apple\s+/, '');
+  }
+  if ($('homeUptime')) {
+    $('homeUptime').textContent = fmtUptime(snap.cpu?.uptime || 0);
+  }
+  if ($('homeWifiSsid')) {
+    const ssid = snap.wifi?.ssid;
+    if (ssid) {
+      $('homeWifiSsid').textContent = ssid.length <= 14 ? ssid : ssid.slice(0, 13) + '…';
+    } else if (snap.network?.interface) {
+      $('homeWifiSsid').textContent = `${snap.network.interface} (LAN)`;
+    } else {
+      $('homeWifiSsid').textContent = 'Brak sieci';
+    }
+  }
+
+  const maxTemp = (temps && (temps.maxDie || temps.cpu || temps.soc)) || 0;
+  if ($('homeChipTemp')) {
+    applyTempEl($('homeChipTemp'), maxTemp);
+  }
+  if ($('homeChipTempSub')) {
+    if (maxTemp >= 80) $('homeChipTempSub').textContent = 'Wysoka temp.';
+    else if (maxTemp >= 62) $('homeChipTempSub').textContent = 'Podwyższona';
+    else if (maxTemp > 0) $('homeChipTempSub').textContent = 'W normie';
+    else $('homeChipTempSub').textContent = 'W normie';
+  }
+
+  if ($('homeChipBatt')) {
+    $('homeChipBatt').textContent = snap.battery ? `${snap.battery.percent}%` : '--%';
+  }
+  if ($('homeChipBattSub')) {
+    if (snap.battery?.charging) {
+      $('homeChipBattSub').textContent = 'Ładowanie ⚡';
+    } else {
+      const h = snap.battery?.healthPercent ?? 100;
+      const cyc = snap.battery?.cycleCount ?? 0;
+      $('homeChipBattSub').textContent = `Kondycja ${h}% (${cyc}c)`;
+    }
+  }
+
+  if ($('homeChipPing')) {
+    $('homeChipPing').textContent = snap.network?.pingMs != null ? `${snap.network.pingMs} ms` : '-- ms';
+  }
+  if ($('homeChipNetSub')) {
+    const rxSpd = fmtSpeedParts(snap.network?.rxBytesPerSec || 0);
+    $('homeChipNetSub').textContent = `↓ ${rxSpd.short}`;
+  }
+
+  if ($('homeLoadAvg')) {
+    const loads = snap.cpu?.loadAvg || [];
+    if (loads.length >= 2) {
+      $('homeLoadAvg').textContent = `${loads[0].toFixed(2)} / ${loads[1].toFixed(2)}`;
+    } else {
+      $('homeLoadAvg').textContent = `${(snap.cpu?.totalPercent || 0).toFixed(1)}%`;
+    }
+  }
+  if ($('homeSwapVal')) {
+    const swapU = snap.memory?.swapUsed || 0;
+    $('homeSwapVal').textContent = swapU > 0 ? fmtBytes(swapU, 0) : '0 MB';
+  }
+  if ($('homeDockerVal')) {
+    const dkRunning = Boolean(snap.dev?.docker?.running);
+    $('homeDockerVal').textContent = dkRunning ? 'Aktywny' : 'Wył.';
+    const dkDot = $('homeDockerDot');
+    if (dkDot) {
+      dkDot.className = dkRunning ? 'sys-dot dot-green' : 'sys-dot';
+    }
+  }
+
+  if (snap.junk) {
+    renderJunkCleaner(snap.junk);
+  }
+  if (snap.diskUsage && !isScanningDiskUsageUI) {
+    renderDiskUsage(snap.diskUsage);
+  }
+}
+
+async function triggerDiskUsageScan(targetPath = '') {
+  if (isScanningDiskUsageUI) return;
+  isScanningDiskUsageUI = true;
+  activeDiskScopePath = targetPath;
+
+  document.querySelectorAll('[data-disk-scope]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.diskScope === targetPath);
+  });
+
+  const badge = $('diskUsagePathBadge');
+  if (badge) badge.textContent = 'Skanowanie...';
+  const refreshBtn = $('btnScanDiskUsage');
+  if (refreshBtn) refreshBtn.disabled = true;
+
+  try {
+    const res = await tiny.api.call('scanDiskUsage', { path: targetPath });
+    if (res) {
+      renderDiskUsage(res);
+    }
+  } catch (_) {
+    if (badge) badge.textContent = 'Błąd skanowania';
+  } finally {
+    if (refreshBtn) refreshBtn.disabled = false;
+    isScanningDiskUsageUI = false;
+  }
+}
+
+if ($('diskUsageBlock')) {
+  $('diskUsageBlock').addEventListener('click', async (ev) => {
+    const revealBtn = ev.target.closest('[data-reveal-path]');
+    if (revealBtn) {
+      ev.stopPropagation();
+      const p = revealBtn.dataset.revealPath;
+      if (p) {
+        try {
+          await tiny.api.call('revealInFinder', { path: p });
+        } catch (_) {}
+      }
+      return;
+    }
+
+    const scopeBtn = ev.target.closest('[data-disk-scope]');
+    if (scopeBtn) {
+      await triggerDiskUsageScan(scopeBtn.dataset.diskScope || '');
+      return;
+    }
+
+    const refreshBtn = ev.target.closest('#btnScanDiskUsage');
+    if (refreshBtn) {
+      await triggerDiskUsageScan(activeDiskScopePath);
+      return;
+    }
+
+    const dirRow = ev.target.closest('[data-drill-dir]');
+    if (dirRow && dirRow.dataset.drillDir) {
+      await triggerDiskUsageScan(dirRow.dataset.drillDir);
+    }
+  });
+}
+
+// Toggle Caffeinate ('Nie usypiaj Maca')
+if ($('btnCaffeinate')) {
+  $('btnCaffeinate').addEventListener('click', async () => {
+    try {
+      const res = await tiny.api.call('toggleCaffeinate');
+      if (res && typeof res.caffeinateActive === 'boolean') {
+        applyCaffeinateUI(res.caffeinateActive);
+      }
+    } catch (_) {}
+  });
+}
+
+// System Junk Cleaner (CCleaner / Mac Sai style): Scan & Clean handlers
+if ($('junkCategoriesList')) {
+  $('junkCategoriesList').addEventListener('change', (ev) => {
+    const chk = ev.target.closest('[data-junk-check]');
+    if (!chk) return;
+    const catId = chk.dataset.junkCheck;
+    if (chk.checked) selectedJunkCats.add(catId);
+    else selectedJunkCats.delete(catId);
+    if (latestJunkData) renderJunkCleaner(latestJunkData);
+  });
+}
+
+if ($('btnScanJunk')) {
+  $('btnScanJunk').addEventListener('click', async () => {
+    if (isCleaningOrScanning) return;
+    isCleaningOrScanning = true;
+    const btn = $('btnScanJunk');
+    const status = $('cleanerStatusText');
+    const track = $('cleanerProgTrack');
+    const fill = $('cleanerProgFill');
+    btn.disabled = true;
+    if (status) status.textContent = 'Skanowanie katalogów Cache, Logów, Kosza i Dev...';
+    if (track) track.hidden = false;
+    if (fill) fill.style.width = '45%';
+    try {
+      const scan = await tiny.api.call('scanSystemJunk');
+      if (scan) {
+        renderJunkCleaner(scan);
+        if (status) {
+          status.textContent = `Skan zakończony: wykryto ${fmtBytes(scan.totalBytes || 0, 1)} śmieci`;
+        }
+      }
+    } catch (_) {
+      if (status) status.textContent = 'Błąd podczas skanowania plików tymczasowych';
+    } finally {
+      if (fill) fill.style.width = '100%';
+      setTimeout(() => {
+        if (track) track.hidden = true;
+      }, 600);
+      btn.disabled = false;
+      isCleaningOrScanning = false;
+    }
+  });
+}
+
+if ($('btnCleanJunk')) {
+  $('btnCleanJunk').addEventListener('click', async () => {
+    if (isCleaningOrScanning) return;
+    const categories = Array.from(selectedJunkCats);
+    if (categories.length === 0) {
+      if ($('cleanerStatusText')) {
+        $('cleanerStatusText').textContent = 'Zaznacz przynajmniej jedną kategorię do wyczyszczenia!';
+      }
+      return;
+    }
+    isCleaningOrScanning = true;
+    const btn = $('btnCleanJunk');
+    const status = $('cleanerStatusText');
+    const track = $('cleanerProgTrack');
+    const fill = $('cleanerProgFill');
+    btn.disabled = true;
+    btn.textContent = 'Czyszczenie...';
+    if (status) status.textContent = 'Usuwanie zaznaczonych śmieci i czyszczenie DNS...';
+    if (track) track.hidden = false;
+    if (fill) fill.style.width = '60%';
+    try {
+      const res = await tiny.api.call('cleanSystemJunk', { categories });
+      if (res?.scan) {
+        renderJunkCleaner(res.scan);
+      }
+      if (status) {
+        const freed = Number(res?.freedBytes) || 0;
+        const items = Number(res?.removedItems) || 0;
+        status.textContent =
+          freed > 0
+            ? `✅ Oczyszczono ${fmtBytes(freed, 1)} (${items} elementów)!`
+            : `✅ Wyczyszczono (${items} elementów + cache DNS)!`;
+      }
+    } catch (_) {
+      if (status) status.textContent = 'Błąd podczas czyszczenia wybranych kategorii';
+    } finally {
+      if (fill) fill.style.width = '100%';
+      setTimeout(() => {
+        if (track) track.hidden = true;
+      }, 800);
+      btn.disabled = false;
+      isCleaningOrScanning = false;
+      if (latestJunkData) renderJunkCleaner(latestJunkData);
+    }
+  });
+}
+
+// Quick RAM & DNS Cache Cleaner
+if ($('btnCleanRam')) {
+  $('btnCleanRam').addEventListener('click', async () => {
+    const btn = $('btnCleanRam');
+    const status = $('ramCleanStatus');
+    btn.disabled = true;
+    btn.textContent = 'Czyszczenie...';
+    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie RAM...';
+    try {
+      const res = await tiny.api.call('cleanRamAndDns');
+      if (status && res?.ok) {
+        status.textContent = `Wyczyszczono DNS! Wolny RAM: ${fmtGB(res.afterFree || 0, 2)}`;
+      }
+    } catch (_) {
+      if (status) status.textContent = 'Błąd podczas czyszczenia DNS';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🧹 Wyczyść RAM i DNS';
+    }
+  });
+}
+
+// Toggle Always on Top ('Przypnij' vs Desktop Widget)
+$('btnPin').addEventListener('click', async () => {
+  const res = await tiny.api.call('toggleWidgetLayer');
+  const isAlwaysOnTop = !res.desktopWidgetMode;
+  try {
+    await tiny.win.setAlwaysOnTop(isAlwaysOnTop);
+  } catch (_) {}
+  applyWindowModeUI(res.desktopWidgetMode, undefined);
+});
+
+// Toggle Compact (348x268) vs Expanded (348x660)
+$('btnCompact').addEventListener('click', async () => {
+  const res = await tiny.api.call('toggleCompactMode');
+  applyWindowModeUI(undefined, res.compactMode);
+});
+
+// Clicking any gauge ring or status strip item switches directly to its detailed section
+document.querySelectorAll('[data-jump]').forEach((el) => {
+  el.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const targetTab = el.dataset.jump;
+    if (targetTab) {
+      setActiveTab(targetTab);
+    }
+  });
+});
+
+// Main Tab Bar listener (Variant A)
+if ($('mainTabBar')) {
+  $('mainTabBar').addEventListener('click', (ev) => {
+    const tabBtn = ev.target.closest('[data-tab]');
+    if (!tabBtn) return;
+    setActiveTab(tabBtn.dataset.tab);
+  });
+}
+
+// Processes sub-navigation listener (CPU / RAM / Ports)
+if ($('procsSubnav')) {
+  $('procsSubnav').addEventListener('click', (ev) => {
+    const subBtn = ev.target.closest('[data-procs-sub]');
+    if (!subBtn) return;
+    setProcsSub(subBtn.dataset.procsSub);
+  });
+}
+
+if ($('subtabCpu')) $('subtabCpu').addEventListener('click', () => setProcsSub('top-cpu'));
+if ($('subtabRam')) $('subtabRam').addEventListener('click', () => setProcsSub('top-ram'));
+if ($('subtabPorts')) $('subtabPorts').addEventListener('click', () => setProcsSub('dev'));
+
+// Home Quick Clean RAM & DNS button
+if ($('btnHomeCleanRam')) {
+  $('btnHomeCleanRam').addEventListener('click', async () => {
+    const btn = $('btnHomeCleanRam');
+    const label = $('homeCleanRamLabel');
+    btn.disabled = true;
+    if (label) label.textContent = 'Czyszczenie...';
+    try {
+      const res = await tiny.api.call('cleanRamAndDns');
+      if (label) {
+        label.textContent = res?.ok ? '✅ Wyczyszczono RAM i DNS!' : 'Wyczyszczono';
+      }
+    } catch (_) {
+      if (label) label.textContent = 'Błąd czyszczenia';
+    } finally {
+      setTimeout(() => {
+        btn.disabled = false;
+        if (label) label.textContent = 'Wyczyść RAM i DNS';
+      }, 2000);
+    }
+  });
+}
+
+// Quick RAM & DNS cleaner button inside Smart Cleaner card
+if ($('btnCleanRamAlt')) {
+  $('btnCleanRamAlt').addEventListener('click', async () => {
+    const btn = $('btnCleanRamAlt');
+    const status = $('cleanerDnsStatus');
+    btn.disabled = true;
+    btn.textContent = 'Czyszczenie...';
+    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie RAM...';
+    try {
+      const res = await tiny.api.call('cleanRamAndDns');
+      if (status && res?.ok) {
+        status.textContent = `Wyczyszczono DNS! Wolny RAM: ${fmtGB(res.afterFree || 0, 2)}`;
+      }
+    } catch (_) {
+      if (status) status.textContent = 'Błąd podczas czyszczenia DNS';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🧹 Wyczyść RAM i DNS';
+    }
+  });
+}
+
+// One-Click Kill Process / Port Handler (delegated on cardsContainer)
+$('cardsContainer').addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('[data-kill-pid]');
+  if (!btn) return;
+  ev.stopPropagation();
+  const pid = Number(btn.dataset.killPid);
+  if (!pid || pid <= 1) return;
+
+  const prevAttempt = recentlyKilledPids.get(pid) || 0;
+  const force = Boolean(ev.altKey || ev.shiftKey || (Date.now() - prevAttempt < 5000));
+  recentlyKilledPids.set(pid, Date.now());
+
+  const row = btn.closest('.proc-row');
+  if (row) {
+    row.style.opacity = '0.45';
+  }
+  btn.textContent = '…';
+  try {
+    await tiny.api.call('killProcess', { pid, force });
+  } catch (_) {}
+});
+
+// Speedtest button & progress events
+$('btnSpeedtest').addEventListener('click', async () => {
+  const btn = $('btnSpeedtest');
+  btn.disabled = true;
+  btn.textContent = 'Test...';
+  $('speedtestTrack').hidden = false;
+  $('speedtestFill').style.width = '5%';
+  try {
+    await tiny.api.call('runSpeedtest');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Testuj łącze';
+  }
+});
+
+tiny.api.on('speedtest-progress', (info) => {
+  if (!info) return;
+  $('speedtestStatus').textContent = info.message || '';
+  if (info.phase === 'done' || info.phase === 'error') {
+    $('speedtestFill').style.width = info.phase === 'done' ? '100%' : '0%';
+  } else {
+    $('speedtestTrack').hidden = false;
+    $('speedtestFill').style.width = `${Math.min(100, Math.max(5, info.progress || 10))}%`;
+  }
+});
+
+// =========================================================================
+// Modern Floating Dark-Glass Tooltip Engine (Variant A)
+// =========================================================================
+const tooltipEl = $('customTooltip');
+const tipTitleEl = $('tooltipTitle');
+const tipDescEl = $('tooltipDesc');
+const tipHintEl = $('tooltipHint');
+
+let tipTimeout = null;
+let activeTipTarget = null;
+let tooltipsEnabled = localStorage.getItem('latata_tooltips_enabled') !== 'false';
+
+function updateTooltipsToggleUI() {
+  const btn = $('btnToggleTooltips');
+  if (btn) {
+    btn.classList.toggle('active', tooltipsEnabled);
+    btn.classList.toggle('off', !tooltipsEnabled);
+    const textEl = $('tooltipToggleText');
+    if (textEl) {
+      textEl.textContent = tooltipsEnabled ? 'ON' : 'OFF';
+    }
+    btn.title = tooltipsEnabled
+      ? 'Wskazówki (Tooltipy): ON (kliknij, aby wyłączyć)'
+      : 'Wskazówki (Tooltipy): OFF (kliknij, aby włączyć)';
+    btn.setAttribute('aria-pressed', tooltipsEnabled ? 'true' : 'false');
+  }
+
+  const homeBtn = $('btnHomeToggleTooltips');
+  const homeStatus = $('homeTooltipsStatus');
+  if (homeStatus) {
+    homeStatus.textContent = tooltipsEnabled ? 'ON' : 'OFF';
+  }
+  if (homeBtn) {
+    homeBtn.classList.toggle('active', tooltipsEnabled);
+    homeBtn.classList.toggle('off', !tooltipsEnabled);
+    homeBtn.title = tooltipsEnabled
+      ? 'Wskazówki (Tooltipy): ON (kliknij, aby wyłączyć)'
+      : 'Wskazówki (Tooltipy): OFF (kliknij, aby włączyć)';
+  }
+}
+
+function setTooltipsEnabled(enabled) {
+  tooltipsEnabled = !!enabled;
+  localStorage.setItem('latata_tooltips_enabled', tooltipsEnabled ? 'true' : 'false');
+  updateTooltipsToggleUI();
+  if (!tooltipsEnabled) {
+    hideTooltip();
+  }
+  if (window.tiny?.api) {
+    tiny.api.call('setTooltipsState', { enabled: tooltipsEnabled }).catch(() => {});
+  }
+}
+
+function hideTooltip() {
+  if (tipTimeout) {
+    clearTimeout(tipTimeout);
+    tipTimeout = null;
+  }
+  activeTipTarget = null;
+  if (tooltipEl) {
+    tooltipEl.classList.remove('visible');
+    tooltipEl.hidden = true;
+  }
+}
+
+const TOOLTIP_DICTIONARY = [
+  {
+    match: (el) => el.id === 'liveDot',
+    title: '🟢 Połączenie z systemem',
+    desc: 'Aktywna dwustronna komunikacja IPC z silnikiem txiki.js i natywnym modułem macmon.',
+  },
+  {
+    match: (el) => el.id === 'btnToggleTooltips' || el.id === 'btnHomeToggleTooltips',
+    title: '💡 Podpowiedzi (Tooltipy)',
+    desc: 'Włącza lub całkowicie wyłącza dymki informacyjne z opisami funkcji przy najechaniu myszą.',
+    hint: 'Kliknij, aby przełączyć tryb podpowiedzi',
+  },
+  {
+    match: (el) => el.id === 'btnCaffeinate',
+    title: '☕ Tryb Caffeinate',
+    desc: 'Blokuje wygaszanie ekranu i uśpienie Maca (przydatne przy pobieraniu, renderowaniu lub prezentacjach).',
+    hint: 'Kliknij: Włącz / Wyłącz',
+  },
+  {
+    match: (el) => el.id === 'btnPin',
+    title: '📌 Zawsze na wierzchu',
+    desc: 'Utrzymuje okno monitora nad wszystkimi innymi aplikacjami i przestrzeniami roboczymi macOS.',
+    hint: 'Kliknij: Przypnij / Tryb widżetu',
+  },
+  {
+    match: (el) => el.id === 'btnCompact',
+    title: '📏 Rozmiar widżetu',
+    desc: 'Przełącza pomiędzy widokiem dopasowanym (356×548) a pełną kolumną (356×760).',
+    hint: 'Kliknij: Rozwiń / Zwiń',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'dashboard',
+    title: '🏠 Ekran Home',
+    desc: 'Pulpit podsumowania Maca: 4 wskaźniki kołowe, baterie akcesoriów, pojemność dysku i stan łącza.',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'procs',
+    title: '⚡ Menedżer procesów',
+    desc: 'Top 10 procesów obciążających procesor (CPU), pamięć (RAM) oraz aktywne porty sieciowe.',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'disk',
+    title: '💾 Pamięć masowa (Dysk)',
+    desc: 'Pojemność dysku SSD/HDD, wolne miejsce oraz eksplorator największych folderów i plików.',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'cleaner',
+    title: '🧹 Smart Cleaner',
+    desc: 'Skanowanie i czyszczenie pamięci podręcznej aplikacji, logów, Kosza i plików tymczasowych.',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'network',
+    title: '🌐 Sieć i Wi-Fi',
+    desc: 'Bieżący transfer danych, wykres pobierania/wysyłania, opóźnienie ping i wbudowany speedtest.',
+  },
+  {
+    match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'sensors',
+    title: '🌡 Sensory i Zasilanie',
+    desc: 'Temperatury procesora i GPU, stan ogniwa baterii, moc ładowarki USB-C i akcesoria Bluetooth.',
+  },
+  {
+    match: (el) => el.id === 'subtabCpu',
+    title: '💻 Procesor CPU',
+    desc: 'Top 10 procesów najbardziej obciążających rdzenie procesora Apple Silicon.',
+  },
+  {
+    match: (el) => el.id === 'subtabRam',
+    title: '🧠 Pamięć RAM',
+    desc: 'Top 10 procesów zużywających najwięcej fizycznej pamięci operacyjnej RAM.',
+  },
+  {
+    match: (el) => el.id === 'subtabPorts',
+    title: '⇄ Porty TCP',
+    desc: 'Nasłuchujące porty sieciowe dev/localhost (serwery www, bazy danych, kontenery Docker).',
+  },
+  {
+    match: (el) => el.dataset.jump === 'top-cpu' && el.classList.contains('hud-tile'),
+    title: '💻 Procesor (CPU)',
+    desc: 'Całkowite obciążenie rdzeni procesora oraz temperatura układu SoC.',
+    hint: 'Kliknij: Zobacz listę procesów CPU',
+  },
+  {
+    match: (el) => el.dataset.jump === 'top-ram' && el.classList.contains('hud-tile'),
+    title: '🧠 Pamięć operacyjna (RAM)',
+    desc: 'Pamięć zajęta przez aplikacje i system wraz z poziomem presji pamięci.',
+    hint: 'Kliknij: Zobacz listę procesów RAM',
+  },
+  {
+    match: (el) => el.dataset.jump === 'power' && el.classList.contains('hud-tile') && !el.id.startsWith('btSlot'),
+    title: '⚡ Karta graficzna (GPU)',
+    desc: 'Wykorzystanie rdzeni graficznych Apple Silicon, silnika renderowania i temperatura.',
+    hint: 'Kliknij: Zobacz sensory i zasilanie',
+  },
+  {
+    match: (el) => el.dataset.jump === 'network' && el.classList.contains('hud-tile'),
+    title: '📶 Połączenie Wi-Fi',
+    desc: 'Jakość sygnału bezprzewodowego wyliczona z poziomu RSSI oraz szumów tła.',
+    hint: 'Kliknij: Zobacz szczegóły sieci',
+  },
+  {
+    match: (el) => el.id === 'btSlot0',
+    title: '🔋 Bateria MacBooka',
+    desc: 'Bieżący poziom naładowania, moc zasilacza USB-C oraz kondycja ogniwa.',
+    hint: 'Kliknij: Zobacz szczegóły zasilania',
+  },
+  {
+    match: (el) => el.id === 'btSlot1' || el.id === 'btSlot2' || el.id === 'btSlot3',
+    title: '🎧 Akcesorium Bluetooth',
+    desc: 'Poziom naładowania podłączonego urządzenia (słuchawki lewa/prawa, mysz, klawiatura, etui).',
+  },
+  {
+    match: (el) => el.id === 'diskHudBar',
+    title: '💾 Dysk SSD / HDD',
+    desc: 'Wolna i całkowita przestrzeń na dysku systemowym oraz bufory APFS.',
+    hint: 'Kliknij: Zobacz największe katalogi i pliki',
+  },
+  {
+    match: (el) => el.id === 'btnHudCleaner',
+    title: '🧹 Szybki Cleaner',
+    desc: 'Wykryte śmieci systemowe i pliki tymczasowe gotowe do bezpiecznego usunięcia.',
+    hint: 'Kliknij: Otwórz Smart Cleaner',
+  },
+  {
+    match: (el) => el.dataset.killPid,
+    title: '✕ Zakończ proces',
+    desc: 'Wysyła bezpieczny sygnał zakończenia SIGTERM do wybranego procesu.',
+    hint: '<kbd>⌥ Option</kbd> + kliknięcie: Wymuś natychmiastowe zabicie (<kbd>kill -9</kbd>)',
+  },
+  {
+    match: (el) => el.dataset.drillDir,
+    title: '📁 Eksploruj folder',
+    desc: 'Przejdź w głąb tego katalogu, aby sprawdzić które podfoldery zajmują najwięcej miejsca.',
+    hint: 'Kliknij: Otwórz ten katalog w analizatorze',
+  },
+  {
+    match: (el) => el.dataset.revealPath,
+    title: '📂 Pokaż w Finderze',
+    desc: 'Otwiera systemowe okno Findera i podświetla ten element na dysku.',
+    hint: 'Kliknij: Otwórz w Finderze',
+  },
+  {
+    match: (el) => el.id === 'btnHomeCleanRam' || el.id === 'btnCleanRam' || el.id === 'btnCleanRamAlt',
+    title: '🧹 Czyszczenie RAM i DNS',
+    desc: 'Opróżnia pamięć podręczną DNS (dscacheutil) i instruuje jądro XNU, aby zwolniło nieaktywny RAM.',
+    hint: 'Kliknij: Wyczyść pamięć i DNS',
+  },
+  {
+    match: (el) => el.id === 'btnSpeedtest',
+    title: '⚡ Test prędkości łącza',
+    desc: 'Mierzy rzeczywistą przepustowość pobierania i wysyłania łącząc się z brzegami CDN Cloudflare.',
+    hint: 'Kliknij: Uruchom Speedtest',
+  },
+  {
+    match: (el) => el.id === 'btnScanJunk',
+    title: '🔍 Skanowanie śmieci',
+    desc: 'Sprawdza katalogi pamięci podręcznej Caches, logi deweloperskie i Kosz pod kątem zbędnych plików.',
+    hint: 'Kliknij: Rozpocznij skanowanie',
+  },
+  {
+    match: (el) => el.id === 'btnCleanJunk',
+    title: '🗑️ Oczyść system',
+    desc: 'Trwale usuwa zaznaczone pliki tymczasowe, bufory aplikacji i opróżnia Kosz użytkownika.',
+    hint: 'Kliknij: Usuń zaznaczone śmieci',
+  },
+  {
+    match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'power' && el.querySelector('#homeChipTemp'),
+    title: '🌡 Termika Apple Silicon',
+    desc: 'Maksymalna temperatura układu scalonego SoC (rdzenie CPU, GPU i silnik Neural Engine).',
+    hint: 'Kliknij: Przejdź do sensorów',
+  },
+  {
+    match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'power' && el.querySelector('#homeChipBatt'),
+    title: '🔋 Diagnostyka ogniwa',
+    desc: 'Bieżąca kondycja baterii w stosunku do pojemności fabrycznej oraz łączna liczba cykli ładowania.',
+    hint: 'Kliknij: Przejdź do zasilania',
+  },
+  {
+    match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'network',
+    title: '⚡ Jakość łącza (Ping)',
+    desc: 'Średni czas podróży pakietu sieciowego w ms oraz aktualna prędkość pobierania.',
+    hint: 'Kliknij: Przejdź do parametrów sieci',
+  },
+  {
+    match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'top-cpu',
+    title: '📊 Obciążenie systemu (Load)',
+    desc: 'Średnia liczba wątków oczekujących na procesor w oknie 1 minuty oraz 5 minut.',
+  },
+  {
+    match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'top-ram',
+    title: '🔄 Pamięć wymiany (Swap)',
+    desc: 'Ilość danych przeniesionych tymczasowo z pamięci RAM na szybki dysk SSD.',
+  },
+  {
+    match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'dev',
+    title: '🐳 Środowisko Docker',
+    desc: 'Status silnika kontenerów Docker Desktop / OrbStack i pamięć zaalokowana przez kontenery.',
+  },
+  {
+    match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('.strip-icon.down'),
+    title: '↓ Prędkość pobierania',
+    desc: 'Aktualna przepustowość danych pobieranych z sieci w czasie rzeczywistym.',
+  },
+  {
+    match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('.strip-icon.up'),
+    title: '↑ Prędkość wysyłania',
+    desc: 'Aktualna przepustowość danych wysyłanych do sieci w czasie rzeczywistym.',
+  },
+  {
+    match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('#stripPing'),
+    title: '⚡ Opóźnienie sieci (Ping)',
+    desc: 'Czas odpowiedzi pakietu ICMP do najbliższego serwera DNS Cloudflare (1.1.1.1).',
+  },
+  {
+    match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('#stripPortsItem'),
+    title: '⇄ Porty sieciowe',
+    desc: 'Liczba aktywnych portów TCP nasłuchujących połączeń na Twoim Macu.',
+  },
+];
+
+function resolveTooltipInfo(target) {
+  if (!target) return null;
+
+  // 1. Explicit data attributes
+  if (target.dataset.tipTitle || target.dataset.tipDesc) {
+    return {
+      title: target.dataset.tipTitle || '',
+      desc: target.dataset.tipDesc || '',
+      hint: target.dataset.tipHint || null,
+    };
+  }
+
+  // 2. Dictionary match
+  for (const entry of TOOLTIP_DICTIONARY) {
+    try {
+      if (entry.match(target)) {
+        return entry;
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback to existing title or nativeTitle
+  const rawTitle = target.dataset.nativeTitle || target.getAttribute('title');
+  if (rawTitle && rawTitle.trim()) {
+    const text = rawTitle.trim();
+    if (text.includes(' — ')) {
+      const [title, desc] = text.split(' — ');
+      return { title: title.trim(), desc: desc.trim() };
+    }
+    if (text.includes(': ')) {
+      const [title, desc] = text.split(': ');
+      return { title: title.trim(), desc: desc.trim() };
+    }
+    return { title: text, desc: '' };
+  }
+
+  return null;
+}
+
+function showTooltipFor(target, info) {
+  if (!tooltipEl || !info) return;
+  activeTipTarget = target;
+
+  tipTitleEl.textContent = info.title || '';
+  tipDescEl.textContent = info.desc || '';
+  if (info.hint && String(info.hint).trim().length > 0) {
+    tipHintEl.hidden = false;
+    tipHintEl.style.display = 'inline-flex';
+    tipHintEl.innerHTML = info.hint;
+  } else {
+    tipHintEl.hidden = true;
+    tipHintEl.style.display = 'none';
+    tipHintEl.innerHTML = '';
+  }
+
+  tooltipEl.hidden = false;
+  // Position calculation
+  const rect = target.getBoundingClientRect();
+  const tipRect = tooltipEl.getBoundingClientRect();
+  const pad = 8;
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
+  // Horizontal position: center on target, clamped within screen
+  let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+  left = Math.max(pad, Math.min(winW - tipRect.width - pad, left));
+
+  // Vertical position: prefer below if room, else above
+  let top = 0;
+  if (rect.bottom + tipRect.height + 6 < winH) {
+    top = rect.bottom + 6;
+  } else if (rect.top - tipRect.height - 6 > 0) {
+    top = rect.top - tipRect.height - 6;
+  } else {
+    top = Math.max(pad, Math.min(winH - tipRect.height - pad, rect.top));
+  }
+
+  tooltipEl.style.left = `${Math.round(left)}px`;
+  tooltipEl.style.top = `${Math.round(top)}px`;
+
+  requestAnimationFrame(() => {
+    if (activeTipTarget === target) {
+      tooltipEl.classList.add('visible');
+    }
+  });
+}
+
+const TOOLTIP_SELECTORS = [
+  '[data-tip-title]',
+  '.nav-tab',
+  '.subnav-pill',
+  '.scope-pill',
+  '[data-procs-sub]',
+  '[data-kill-pid]',
+  '[data-drill-dir]',
+  '[data-reveal-path]',
+  '[data-disk-scope]',
+  'button',
+  '.hud-tile',
+  '.mini-strip-item',
+  '.home-chip',
+  '.home-sys-pill',
+  '#liveDot',
+  '[title]',
+].join(', ');
+
+document.addEventListener('mouseover', (ev) => {
+  if (!tooltipsEnabled) return;
+  const target = ev.target.closest(TOOLTIP_SELECTORS);
+  if (!target || target === tooltipEl || tooltipEl.contains(target)) return;
+
+  // Ignore window/large background containers
+  if (
+    target === document.body ||
+    target.id === 'appShell' ||
+    target.id === 'cardsContainer' ||
+    target.id === 'ringsPanel' ||
+    target.id === 'mainTabBar' ||
+    target.id === 'procsSubnav' ||
+    target.id === 'homeGlancePanel' ||
+    target.classList.contains('cards-container') ||
+    target.classList.contains('rings-panel') ||
+    target.classList.contains('card') ||
+    target.classList.contains('app-shell') ||
+    target.classList.contains('disk-hud-bar')
+  ) {
+    return;
+  }
+
+  const info = resolveTooltipInfo(target);
+  if (!info) return;
+
+  // Suppress native slow title popup
+  if (target.hasAttribute('title')) {
+    target.dataset.nativeTitle = target.getAttribute('title');
+    target.removeAttribute('title');
+  }
+
+  if (activeTipTarget === target) return;
+
+  if (tipTimeout) clearTimeout(tipTimeout);
+  tipTimeout = setTimeout(() => {
+    showTooltipFor(target, info);
+  }, 160);
+}, true);
+
+document.addEventListener('mouseout', (ev) => {
+  const target = ev.target.closest(TOOLTIP_SELECTORS);
+  if (target && target.dataset.nativeTitle) {
+    target.setAttribute('title', target.dataset.nativeTitle);
+    delete target.dataset.nativeTitle;
+  }
+  if (!ev.relatedTarget || !ev.relatedTarget.closest) {
+    hideTooltip();
+    return;
+  }
+  const nextTarget = ev.relatedTarget.closest(TOOLTIP_SELECTORS);
+  if (nextTarget !== activeTipTarget) {
+    hideTooltip();
+  }
+}, true);
+
+window.addEventListener('scroll', hideTooltip, true);
+document.addEventListener('click', hideTooltip, true);
+
+if ($('btnToggleTooltips')) {
+  $('btnToggleTooltips').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    setTooltipsEnabled(!tooltipsEnabled);
+  });
+}
+
+if ($('btnHomeToggleTooltips')) {
+  $('btnHomeToggleTooltips').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    setTooltipsEnabled(!tooltipsEnabled);
+  });
+}
+
+updateTooltipsToggleUI();
+
+async function boot() {
+  while (typeof window.tiny === 'undefined' || !window.tiny?.api) {
+    await new Promise((r) => setTimeout(r, 25));
+  }
+
+  tiny.api.on('window-mode', ({ desktopWidgetMode, compactMode }) => {
+    applyWindowModeUI(desktopWidgetMode, compactMode);
+  });
+
+  tiny.api.on('caffeinate-mode', ({ caffeinateActive }) => {
+    applyCaffeinateUI(caffeinateActive);
+  });
+
+  tiny.api.on('tooltips-mode', ({ tooltipsEnabled: val }) => {
+    setTooltipsEnabled(val);
+  });
+
+  tiny.api.on('telemetry', (snap) => {
+    renderTelemetry(snap);
+  });
+
+  tiny.api.call('setTooltipsState', { enabled: tooltipsEnabled }).catch(() => {});
+
+  updateVisibleCards();
+  try {
+    const snap = await tiny.api.call('getSnapshot');
+    renderTelemetry(snap);
+  } catch (err) {
+    console.error('Initial snapshot error:', err);
+  }
+}
+
+boot().catch((err) => {
+  console.error('Boot error:', err);
+});
+
+  </script>
+
+  <!-- Inlined E2E Test Runner -->
+  <script>
+    (async () => {
+      const banner = document.getElementById('e2eBanner');
+      const statusEl = document.getElementById('e2eStatus');
+      const countEl = document.getElementById('e2eCount');
+
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const log = (msg) => {
+        console.log('[E2E-UI] ' + msg);
+        try { tiny?.log?.('[E2E-UI] ' + msg); } catch (_) {}
+      };
+
+      const results = { passed: 0, failed: 0, tests: [] };
+
+      async function test(desc, fn) {
+        try {
+          await fn();
+          results.passed++;
+          results.tests.push({ desc, pass: true });
+          log('✓ PASS: ' + desc);
+        } catch (err) {
+          results.failed++;
+          results.tests.push({ desc, pass: false, error: err.message });
+          console.error('❌ FAIL: ' + desc + ' -> ' + err.message);
+          log('❌ FAIL: ' + desc + ' -> ' + err.message);
+        }
+        countEl.textContent = results.passed + ' pass / ' + results.failed + ' fail';
+      }
+
+      log('Starting Live End-to-End Test in WebKit WKWebView...');
+
+      // 1. Wait until liveDot has .ok or snapshot arrives
+      const t0 = Date.now();
+      while ((typeof window.tiny === 'undefined' || !document.getElementById('liveDot')?.classList.contains('ok')) && Date.now() - t0 < 6000) {
+        await sleep(50);
+      }
+
+      // Ensure snapshot data is rendered
+      let initialSnap = null;
+      if (window.tiny?.api) {
+        try {
+          initialSnap = await tiny.api.call('getSnapshot');
+          renderTelemetry(initialSnap);
+        } catch (_) {}
+      }
+      await sleep(250);
+
+      // --- 1. DOM Shell & Title ---
+      await test('Title displays Latata.Hub', () => {
+        const titleEl = document.querySelector('.app-title');
+        if (!titleEl || !titleEl.textContent.includes('Latata')) throw new Error('Unexpected title: ' + titleEl?.textContent);
+      });
+
+      await test('Live connection indicator is active (.ok)', () => {
+        const dot = document.getElementById('liveDot');
+        if (!dot.classList.contains('ok')) throw new Error('liveDot does not have .ok class');
+      });
+
+      // --- 2. Circular Rings & Status Strip Telemetry ---
+      await test('Circular Gauge Rings have non-zero strokeDashoffset and percentages', () => {
+        const ringCpu = document.getElementById('ringCpu');
+        const hudCpuPct = document.getElementById('hudCpuPct');
+        const hudRamPct = document.getElementById('hudRamPct');
+        if (!ringCpu || !ringCpu.style.strokeDashoffset) throw new Error('ringCpu strokeDashoffset not computed');
+        if (!hudCpuPct.textContent.includes('%') || !hudRamPct.textContent.includes('%')) throw new Error('HUD percentages not formatted');
+      });
+
+      await test('Status strip displays speeds, Ping, Battery and SSD', () => {
+        const stripDown = document.getElementById('stripDown').textContent;
+        const stripUp = document.getElementById('stripUp').textContent;
+        const stripDisk = document.getElementById('stripDisk').textContent;
+        if (!stripDown.includes('B/s')) throw new Error('stripDown invalid: ' + stripDown);
+        if (!stripUp.includes('B/s')) throw new Error('stripUp invalid: ' + stripUp);
+        if (!stripDisk.includes('GB')) throw new Error('stripDisk invalid: ' + stripDisk);
+      });
+
+      // --- 3. Top 10 CPU Processes, App Icons & Kill Button ---
+      await test('Top 10 CPU list renders up to 10 ranked process rows with icons and Kill buttons', () => {
+        const list = document.getElementById('topCpuList');
+        const rows = list.querySelectorAll('.proc-row');
+        if (rows.length === 0) throw new Error('topCpuList has 0 rows');
+        if (rows.length > 10) throw new Error('topCpuList has more than 10 rows (' + rows.length + ')');
+        const r1 = rows[0];
+        if (!r1.querySelector('.proc-rank')?.textContent.includes('#1')) throw new Error('First row missing #1 rank');
+        if (!r1.querySelector('.proc-name')?.textContent) throw new Error('Process name empty');
+        if (!r1.querySelector('.cpu-val')?.textContent.includes('%')) throw new Error('CPU val missing %');
+        if (!r1.querySelector('[data-kill-pid]')) throw new Error('Process row missing One-Click Kill button');
+      });
+
+      await test('Clicking Ports item in status strip opens Developer & Localhost Port Inspector', async () => {
+        const portsItem = document.getElementById('stripPortsItem');
+        portsItem.click();
+        await sleep(150);
+        const portsSec = document.getElementById('sec-ports');
+        if (portsSec.hidden) throw new Error('sec-ports should be visible when Ports strip item is clicked');
+      });
+
+      // --- 4. Ring Clicks & View Switching ---
+      await test('Clicking RAM ring switches view to Top 10 RAM and displays RAM/DNS Clean button', async () => {
+        const ramTile = document.querySelector('#miniHudSystem .hud-tile[data-jump="top-ram"]');
+        ramTile.click();
+        await sleep(150);
+        const ramSec = document.getElementById('sec-ram');
+        const cpuSec = document.getElementById('sec-cpu');
+        if (ramSec.hidden) throw new Error('sec-ram should be visible');
+        if (!cpuSec.hidden) throw new Error('sec-cpu should be hidden');
+        if (!ramTile.classList.contains('active')) throw new Error('RAM tile should have .active class');
+        const ramRows = document.querySelectorAll('#topRamList .proc-row');
+        if (ramRows.length === 0) throw new Error('topRamList has 0 rows');
+        if (!document.getElementById('btnCleanRam')) throw new Error('Missing #btnCleanRam button');
+      });
+
+      await test('Clicking Wi-Fi ring switches view to Network & Wi-Fi', async () => {
+        const wifiTile = document.querySelector('#miniHudSystem .hud-tile[data-jump="network"]');
+        wifiTile.click();
+        await sleep(150);
+        const netSec = document.getElementById('sec-net');
+        const wifiSec = document.getElementById('sec-wifi');
+        if (netSec.hidden || wifiSec.hidden) throw new Error('Network and Wi-Fi sections should be visible');
+        if (!wifiTile.classList.contains('active')) throw new Error('Wi-Fi tile should have .active');
+      });
+
+      await test('Clicking GPU ring switches view to GPU, Sensors & Battery with Bluetooth section', async () => {
+        const gpuTile = document.querySelector('#miniHudSystem .hud-tile[data-jump="power"]');
+        gpuTile.click();
+        await sleep(150);
+        const gpuSec = document.getElementById('sec-gpu');
+        const battSec = document.getElementById('sec-battery');
+        if (gpuSec.hidden || battSec.hidden) throw new Error('GPU and Battery sections should be visible');
+        if (!gpuTile.classList.contains('active')) throw new Error('GPU tile should have .active');
+        if (!document.getElementById('btDevicesBlock')) throw new Error('Missing #btDevicesBlock in Battery card');
+      });
+
+      await test('Clicking CPU ring returns view to Top 10 CPU', async () => {
+        const cpuTile = document.querySelector('#miniHudSystem .hud-tile[data-jump="top-cpu"]');
+        cpuTile.click();
+        await sleep(150);
+        const cpuSec = document.getElementById('sec-cpu');
+        if (cpuSec.hidden) throw new Error('sec-cpu should be visible again');
+        if (!cpuTile.classList.contains('active')) throw new Error('CPU tile should have .active');
+      });
+
+      // --- 4b. Always-Visible Battery Buttons, Disk Capacity Bar & System Cleaner ---
+      await test('Battery buttons (MacBook + Bluetooth) and Disk Capacity Bar are visible immediately without clicking', async () => {
+        const sysHud = document.getElementById('miniHudSystem');
+        const battHud = document.getElementById('miniHudBattery');
+        const diskBar = document.getElementById('diskHudBar');
+        if (sysHud.hidden || battHud.hidden) throw new Error('Both System rings and Battery buttons must be visible immediately');
+        if (!document.getElementById('hudBattPct0').textContent.includes('%')) throw new Error('MacBook battery ring missing percentage');
+        if (!diskBar || !document.getElementById('hudDiskCap').textContent.includes('GB')) throw new Error('Always-visible Disk Capacity Bar missing GB text');
+      });
+
+      await test('Clicking Disk Capacity Bar opens Dysk, and Cleaner opens dedicated Smart Cleaner', async () => {
+        const diskBar = document.getElementById('diskHudBar');
+        diskBar.click();
+        await sleep(150);
+        const diskSec = document.getElementById('sec-disk');
+        const cleanerSec = document.getElementById('sec-cleaner');
+        if (diskSec.hidden) throw new Error('sec-disk should be visible when diskHudBar is clicked');
+        if (!cleanerSec.hidden) throw new Error('sec-cleaner should be hidden when viewing disk');
+
+        const btnCleaner = document.getElementById('btnHudCleaner');
+        btnCleaner.click();
+        await sleep(150);
+        if (cleanerSec.hidden) throw new Error('sec-cleaner should be visible when btnHudCleaner is clicked');
+        if (!diskSec.hidden) throw new Error('sec-disk should be hidden when viewing cleaner');
+        if (!document.getElementById('cleanerBlock') || !document.getElementById('btnCleanJunk')) {
+          throw new Error('Missing System Cleaner block or Clean button');
+        }
+      });
+
+      await test('Processes sub-tabs switch cleanly between CPU, RAM and Ports', async () => {
+        const procsTab = document.querySelector('.nav-tab[data-tab="procs"]');
+        procsTab.click();
+        await sleep(150);
+
+        const subCpu = document.getElementById('subtabCpu');
+        const subRam = document.getElementById('subtabRam');
+        const subPorts = document.getElementById('subtabPorts');
+        const secCpu = document.getElementById('sec-cpu');
+        const secRam = document.getElementById('sec-ram');
+        const secPorts = document.getElementById('sec-ports');
+
+        subRam.click();
+        await sleep(100);
+        if (secRam.hidden || !secCpu.hidden || !secPorts.hidden) throw new Error('subtabRam failed to switch to sec-ram');
+
+        subPorts.click();
+        await sleep(100);
+        if (secPorts.hidden || !secCpu.hidden || !secRam.hidden) throw new Error('subtabPorts failed to switch to sec-ports');
+
+        subCpu.click();
+        await sleep(100);
+        if (secCpu.hidden || !secRam.hidden || !secPorts.hidden) throw new Error('subtabCpu failed to switch to sec-cpu');
+      });
+
+      await test('Home tab displays rich glance panel (Mac model, Uptime, SoC temp, Ping, Load, Actions)', async () => {
+        const homeTab = document.querySelector('.nav-tab[data-tab="dashboard"]');
+        homeTab.click();
+        await sleep(150);
+        const ringsPanel = document.getElementById('ringsPanel');
+        const cardsContainer = document.getElementById('cardsContainer');
+        if (ringsPanel.classList.contains('hidden-for-cards')) throw new Error('ringsPanel hidden on Home tab');
+        if (!cardsContainer.classList.contains('hidden-for-dashboard')) throw new Error('cardsContainer visible on Home tab');
+
+        if (!document.getElementById('homeGlancePanel')) throw new Error('Missing #homeGlancePanel on Home tab');
+        if (!document.getElementById('btnHomeCleanRam')) throw new Error('Missing #btnHomeCleanRam on Home tab');
+      });
+
+      await test('Battery <= 10% while discharging activates .low-battery-warning visual theme', async () => {
+        const shell = document.getElementById('appShell');
+        if (initialSnap) {
+          renderTelemetry({
+            ...initialSnap,
+            battery: { ...(initialSnap.battery || {}), percent: 8, charging: false, plugged: false },
+          });
+          if (!shell.classList.contains('low-battery-warning')) {
+            throw new Error('appShell did not receive .low-battery-warning when battery is 8%');
+          }
+          renderTelemetry(initialSnap);
+        }
+      });
+
+      // --- 5. Always on Top Button ---
+      await test('Always on Top button toggles state and label', async () => {
+        const btnPin = document.getElementById('btnPin');
+        const label = document.getElementById('layerLabel');
+        btnPin.click();
+        await sleep(250);
+        const pinned = btnPin.classList.contains('active');
+        if (!pinned || label.textContent !== 'Przypięto') throw new Error('Pin did not activate (' + label.textContent + ')');
+        btnPin.click();
+        await sleep(250);
+        if (btnPin.classList.contains('active') || label.textContent !== 'Przypnij') throw new Error('Pin did not deactivate');
+      });
+
+      // --- 6. Compact / Expand Button ---
+      await test('Compact / Expand button toggles label and window mode', async () => {
+        const btnCompact = document.getElementById('btnCompact');
+        const label = document.getElementById('compactLabel');
+        btnCompact.click();
+        await sleep(250);
+        if (label.textContent !== 'Zwiń') throw new Error('Expand did not activate (' + label.textContent + ')');
+        btnCompact.click();
+        await sleep(250);
+        if (label.textContent !== 'Rozwiń') throw new Error('Expand did not reset to Rozwiń');
+      });
+
+      // --- 7. Tooltip ON/OFF Switch (Variant A) ---
+      await test('Tooltips ON/OFF button toggles state, updates label/classes, and syncs with Home glance panel', async () => {
+        const btnTip = document.getElementById('btnToggleTooltips');
+        if (!btnTip) throw new Error('Missing #btnToggleTooltips in titlebar');
+        const homeStatus = document.getElementById('homeTooltipsStatus');
+        
+        // Ensure deterministic test baseline (reset to enabled regardless of previous user clicks in localStorage)
+        if (typeof setTooltipsEnabled === 'function') {
+          setTooltipsEnabled(true);
+          await sleep(60);
+        }
+
+        // Initial: should be ON
+        if (!btnTip.classList.contains('active')) throw new Error('Tooltip toggle should initially be active');
+        if (!btnTip.textContent.includes('ON')) throw new Error('Tooltip toggle label should contain ON');
+
+        // Click to turn OFF
+        btnTip.click();
+        await sleep(200);
+        if (!btnTip.classList.contains('off')) throw new Error('Tooltip toggle missing .off class when disabled');
+        if (!btnTip.textContent.includes('OFF')) throw new Error('Tooltip toggle label should contain OFF');
+        if (homeStatus && !homeStatus.textContent.includes('OFF')) throw new Error('Home glance tooltip status should say OFF');
+
+        // Click to turn back ON
+        btnTip.click();
+        await sleep(200);
+        if (!btnTip.classList.contains('active')) throw new Error('Tooltip toggle should be active again');
+        if (!btnTip.textContent.includes('ON')) throw new Error('Tooltip toggle label should contain ON again');
+        if (homeStatus && !homeStatus.textContent.includes('ON')) throw new Error('Home glance tooltip status should say ON');
+      });
+
+      // --- 8. Disk Tab Cleanup ---
+      await test('Disk tab removed Wstecz button (#btnDiskUp) and kept clean refresh button', async () => {
+        const btnUp = document.getElementById('btnDiskUp');
+        if (btnUp !== null) throw new Error('btnDiskUp ("Wstecz") should be completely removed from DOM');
+        const btnRefresh = document.getElementById('btnScanDiskUsage');
+        if (!btnRefresh) throw new Error('Missing #btnScanDiskUsage button in Disk view header');
+      });
+
+      // --- 9. Tooltip Slider Bug Fix ---
+      await test('Tooltip ghost slider bug fix: empty hint element is completely hidden with display:none', async () => {
+        const tipHint = document.getElementById('tooltipHint');
+        if (!tipHint) throw new Error('Missing #tooltipHint element');
+        const style = window.getComputedStyle(tipHint);
+        if (style.display !== 'none') throw new Error('Empty tooltipHint must have display: none to prevent ghost slider thumb, got: ' + style.display);
+      });
+
+      // --- 10. Ghost Background Tooltip Prevention ---
+      await test('Tooltip container trigger prevention: hovering empty app shell does not show tooltip', async () => {
+        const shell = document.getElementById('appShell');
+        const tooltip = document.getElementById('customTooltip');
+        shell.dispatchEvent(new MouseEvent('pointerenter', { bubbles: true, clientX: 20, clientY: 20 }));
+        await sleep(100);
+        if (tooltip.classList.contains('visible')) {
+          throw new Error('Tooltip became visible when hovering empty app shell');
+        }
+      });
+
+      // --- 11. Branding & Name ---
+      await test('Branding: App title and elements show Latata.Hub and not legacy Wujt', async () => {
+        const title = document.querySelector('.app-title');
+        if (!title || !title.textContent.includes('Latata.Hub')) {
+          throw new Error('Title does not contain Latata.Hub: ' + title?.textContent);
+        }
+        if (title.textContent.includes('Wujt')) {
+          throw new Error('Title still contains legacy Wujt name: ' + title.textContent);
+        }
+      });
+
+      // --- Final Report ---
+      await sleep(400);
+      const isOk = results.failed === 0;
+      banner.className = isOk ? 'success' : 'failure';
+      statusEl.textContent = isOk ? '✅ Wszystkie ' + results.passed + ' testów E2E (UI + WebKit) ZDANE!' : '❌ BŁĘDY W TESTACH E2E (' + results.failed + ')';
+      log('=== E2E FINISHED: ' + results.passed + ' passed, ' + results.failed + ' failed ===');
+    })();
+  </script>
+</body>
+</html>

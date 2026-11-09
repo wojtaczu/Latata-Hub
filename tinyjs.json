@@ -1,0 +1,22 @@
+{
+  "$schema": "https://tinyjs.app/schema/tinyjs.schema.json",
+  "name": "latata-hub",
+  "title": "Latata.Hub",
+  "size": "356x548",
+  "minSize": "356x315",
+  "id": "app.tinyjs.latata.hub",
+  "version": "1.4.0",
+  "minTinyjsVersion": "0.70.3",
+  "icon": "assets/icon.png",
+  "contextMenu": false,
+  "permissions": {
+    "location": "Pozwala systemowi macOS wyświetlić nazwę podłączonej sieci Wi-Fi (SSID)."
+  },
+  "chrome": {
+    "frame": false,
+    "windowControls": false,
+    "transparent": true,
+    "vibrancy": "hud",
+    "acceptsFirstMouse": true
+  }
+}
