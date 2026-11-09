@@ -295,10 +295,58 @@ ${appJsText}
         btnPin.click();
         await sleep(250);
         const pinned = btnPin.classList.contains('active');
-        if (!pinned || label.textContent !== 'Przypięto') throw new Error('Pin did not activate (' + label.textContent + ')');
+        if (!pinned || (label.textContent !== 'Przypięto' && label.textContent !== 'Pinned')) throw new Error('Pin did not activate (' + label.textContent + ')');
         btnPin.click();
         await sleep(250);
-        if (btnPin.classList.contains('active') || label.textContent !== 'Przypnij') throw new Error('Pin did not deactivate');
+        if (btnPin.classList.contains('active') || (label.textContent !== 'Przypnij' && label.textContent !== 'Pin')) throw new Error('Pin did not deactivate');
+      });
+
+      // --- 5b. Bilingual Language Switcher (PL / EN) ---
+      await test('Language toggle button switches whole UI between Polish and English', async () => {
+        const btnLang = document.getElementById('btnToggleLang');
+        if (!btnLang) throw new Error('Missing #btnToggleLang element');
+        
+        // Ensure starting in PL mode
+        if (typeof setLanguage === 'function') {
+          setLanguage('pl');
+          await sleep(60);
+        }
+
+        // Switch to EN
+        btnLang.click();
+        await sleep(150);
+        
+        const procsTab = document.querySelector('.nav-tab[data-tab="procs"]');
+        const cleanerTab = document.querySelector('.nav-tab[data-tab="cleaner"]');
+        if (!procsTab.textContent.includes('Processes')) {
+          throw new Error('Tab not translated to EN: ' + procsTab.textContent);
+        }
+        if (!cleanerTab.textContent.includes('Cleaner')) {
+          throw new Error('Cleaner tab text mismatch: ' + cleanerTab.textContent);
+        }
+        if (btnLang.textContent !== '🇵🇱 PL') {
+          throw new Error('btnToggleLang text should be 🇵🇱 PL in English mode, got: ' + btnLang.textContent);
+        }
+
+        // Verify window mode buttons updated to EN
+        const btnPin = document.getElementById('btnPin');
+        const pinLabel = document.getElementById('layerLabel');
+        btnPin.click();
+        await sleep(100);
+        if (pinLabel.textContent !== 'Pinned') throw new Error('Pin active label should be Pinned in EN mode, got: ' + pinLabel.textContent);
+        btnPin.click();
+        await sleep(100);
+        if (pinLabel.textContent !== 'Pin') throw new Error('Pin inactive label should be Pin in EN mode, got: ' + pinLabel.textContent);
+
+        // Switch back to PL
+        btnLang.click();
+        await sleep(150);
+        if (!procsTab.textContent.includes('Procesy')) {
+          throw new Error('Tab not translated back to PL: ' + procsTab.textContent);
+        }
+        if (btnLang.textContent !== '🇬🇧 EN') {
+          throw new Error('btnToggleLang text should be 🇬🇧 EN in Polish mode, got: ' + btnLang.textContent);
+        }
       });
 
       // --- 6. Compact / Expand Button ---

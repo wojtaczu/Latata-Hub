@@ -25,6 +25,7 @@ let lastDiskUsageAt = 0;
 let isScanningDiskUsage = false;
 let currentDiskUsagePath = '';
 let tooltipsEnabled = true;
+let appLang = 'pl';
 const caseBatteryCache = new Map();
 
 // Smart Alerts state
@@ -642,6 +643,7 @@ function sendSmartNotification(app, title, body) {
 
 function checkSmartAlerts(snapshot, app) {
   if (!snapshot) return;
+  const isEn = appLang === 'en';
 
   // 1. High CPU / GPU Temperature (> 85°C for >= 30s)
   const maxTemp = Math.max(snapshot.temps?.cpu || 0, snapshot.temps?.gpu || 0, snapshot.temps?.maxDie || 0);
@@ -650,8 +652,10 @@ function checkSmartAlerts(snapshot, app) {
     if (highTempSec >= 30 && canSendAlert('high-temp', 300_000)) {
       sendSmartNotification(
         app,
-        '🔥 Wysoka temperatura układu!',
-        `Temperatura CPU/GPU wynosi ${maxTemp.toFixed(1)}°C od ponad 30 sekund.`
+        isEn ? '🔥 High System Temperature!' : '🔥 Wysoka temperatura układu!',
+        isEn
+          ? `CPU/GPU temperature has been ${maxTemp.toFixed(1)}°C for over 30 seconds.`
+          : `Temperatura CPU/GPU wynosi ${maxTemp.toFixed(1)}°C od ponad 30 sekund.`
       );
     }
   } else {
@@ -665,14 +669,18 @@ function checkSmartAlerts(snapshot, app) {
   if (pressure >= 4 && canSendAlert('mem-pressure', 300_000)) {
     sendSmartNotification(
       app,
-      '⚠️ Krytyczne obciążenie pamięci RAM',
-      `System intensywnie korzysta z pamięci Swap (${((snapshot.memory?.swapUsed || 0) / 1e9).toFixed(1)} GB).`
+      isEn ? '⚠️ Critical Memory Pressure' : '⚠️ Krytyczne obciążenie pamięci RAM',
+      isEn
+        ? `System is actively using swap space (${((snapshot.memory?.swapUsed || 0) / 1e9).toFixed(1)} GB).`
+        : `System intensywnie korzysta z pamięci Swap (${((snapshot.memory?.swapUsed || 0) / 1e9).toFixed(1)} GB).`
     );
   } else if (topRamProc && topRamProc.memBytes >= fiveGB && (snapshot.memory?.percent || 0) >= 85 && canSendAlert(`mem-leak-${topRamProc.pid}`, 600_000)) {
     sendSmartNotification(
       app,
-      `⚠️ Wysokie zużycie RAM: ${topRamProc.name}`,
-      `Proces ${topRamProc.name} (PID ${topRamProc.pid}) zajmuje ${(topRamProc.memBytes / (1024 ** 3)).toFixed(1)} GB RAM.`
+      isEn ? `⚠️ High RAM Usage: ${topRamProc.name}` : `⚠️ Wysokie zużycie RAM: ${topRamProc.name}`,
+      isEn
+        ? `Process ${topRamProc.name} (PID ${topRamProc.pid}) is using ${(topRamProc.memBytes / (1024 ** 3)).toFixed(1)} GB RAM.`
+        : `Proces ${topRamProc.name} (PID ${topRamProc.pid}) zajmuje ${(topRamProc.memBytes / (1024 ** 3)).toFixed(1)} GB RAM.`
     );
   }
 
@@ -686,15 +694,19 @@ function checkSmartAlerts(snapshot, app) {
       alertedBatt15 = true;
       sendSmartNotification(
         app,
-        '🚨 Krytyczny poziom baterii (≤ 10%)!',
-        `Pozostało tylko ${bPct}% baterii. Widżet przełączył się w tryb ostrzegawczy.`
+        isEn ? '🚨 Critical Battery Level (≤ 10%)!' : '🚨 Krytyczny poziom baterii (≤ 10%)!',
+        isEn
+          ? `Only ${bPct}% battery remaining. Widget switched to alert mode.`
+          : `Pozostało tylko ${bPct}% baterii. Widżet przełączył się w tryb ostrzegawczy.`
       );
     } else if (bPct <= 15 && bPct > 10 && !alertedBatt15) {
       alertedBatt15 = true;
       sendSmartNotification(
         app,
-        '🔋 Niski poziom baterii (15%)',
-        `Poziom baterii spadł do ${bPct}%. Warto podłączyć zasilacz.`
+        isEn ? '🔋 Low Battery Warning (15%)' : '🔋 Niski poziom baterii (15%)',
+        isEn
+          ? `Battery level dropped to ${bPct}%. Consider connecting charger.`
+          : `Poziom baterii spadł do ${bPct}%. Warto podłączyć zasilacz.`
       );
     }
   } else {
@@ -704,8 +716,10 @@ function checkSmartAlerts(snapshot, app) {
       alertedBatt80 = true;
       sendSmartNotification(
         app,
-        '⚡ Bateria naładowana w 80%',
-        'Osiągnięto 80% naładowania — optymalny poziom dla długiej żywotności ogniwa.'
+        isEn ? '⚡ Battery Charged to 80%' : '⚡ Bateria naładowana w 80%',
+        isEn
+          ? 'Reached 80% charge — optimal level for battery longevity.'
+          : 'Osiągnięto 80% naładowania — optymalny poziom dla długiej żywotności ogniwa.'
       );
     }
   }
@@ -718,22 +732,27 @@ function checkSmartAlerts(snapshot, app) {
     if (canSendAlert('net-lost', 60_000)) {
       sendSmartNotification(
         app,
-        '📡 Utracono połączenie z internetem',
-        'Brak odpowiedzi z sieci (Ping / Wi-Fi niedostępne).'
+        isEn ? '📡 Internet Connection Lost' : '📡 Utracono połączenie z internetem',
+        isEn
+          ? 'No network response (Ping / Wi-Fi unavailable).'
+          : 'Brak odpowiedzi z sieci (Ping / Wi-Fi niedostępne).'
       );
     }
   } else if (!wifiOff && pingFailStreak === 0 && latestPingMs !== null && wasOffline) {
     wasOffline = false;
     sendSmartNotification(
       app,
-      '✅ Połączenie z internetem przywrócone',
-      `Sieć znów odpowiada (Ping: ${latestPingMs} ms).`
+      isEn ? '✅ Internet Connection Restored' : '✅ Połączenie z internetem przywrócone',
+      isEn
+        ? `Network is reachable again (Ping: ${latestPingMs} ms).`
+        : `Sieć znów odpowiada (Ping: ${latestPingMs} ms).`
     );
   }
 }
 
 function updateTrayMenu(app, snapshot) {
   try {
+    const isEn = appLang === 'en';
     const cpuPct = Math.round(snapshot?.cpu?.totalPercent || 0);
     const ramPct = Math.round(snapshot?.memory?.percent || 0);
     app.tray.set({
@@ -741,30 +760,41 @@ function updateTrayMenu(app, snapshot) {
       icon: 'sf:gauge.with.dots.needle.67percent',
       tooltip: 'Latata.Hub — macOS System Monitor',
       menu: [
-        { id: 'show', label: 'Pokaż Latata.Hub' },
+        { id: 'show', label: isEn ? 'Show Latata.Hub' : 'Pokaż Latata.Hub' },
         {
           id: 'toggle-layer',
-          label: 'Zawsze na wierzchu (Przypnij / Always on Top)',
+          label: isEn ? 'Always on Top (Pin)' : 'Zawsze na wierzchu (Przypnij)',
           checked: !desktopWidgetMode,
         },
         {
           id: 'toggle-compact',
-          label: 'Rozmiar widżetu (356×548)',
+          label: isEn ? 'Widget Size (356×548)' : 'Rozmiar widżetu (356×548)',
           checked: compactMode,
         },
         {
           id: 'toggle-tooltips',
-          label: tooltipsEnabled ? 'Wskazówki (Tooltipy): ON' : 'Wskazówki (Tooltipy): OFF',
+          label: tooltipsEnabled
+            ? (isEn ? 'Tooltips: ON' : 'Wskazówki (Tooltipy): ON')
+            : (isEn ? 'Tooltips: OFF' : 'Wskazówki (Tooltipy): OFF'),
           checked: tooltipsEnabled,
         },
         { separator: true },
-        { id: 'quit', label: 'Zakończ Latata.Hub' },
+        { id: 'quit', label: isEn ? 'Quit Latata.Hub' : 'Zakończ Latata.Hub' },
       ],
     });
   } catch (_) {}
 }
 
 export const api = {
+  async setLanguage({ lang } = {}, app) {
+    appLang = lang === 'en' ? 'en' : 'pl';
+    try {
+      const snap = await collectTelemetry(app);
+      updateTrayMenu(app, snap);
+    } catch (_) {}
+    return { ok: true, lang: appLang };
+  },
+
   async getSnapshot(_params, app) {
     return await collectTelemetry(app);
   },

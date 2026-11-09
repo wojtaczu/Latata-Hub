@@ -110,6 +110,33 @@ html, body {
   font-weight: 600;
 }
 
+.lang-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 99px;
+  border: 1px solid rgba(147, 197, 253, 0.28);
+  background: rgba(147, 197, 253, 0.08);
+  color: #93c5fd;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.lang-toggle-btn:hover {
+  background: rgba(147, 197, 253, 0.22);
+  border-color: rgba(147, 197, 253, 0.55);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(147, 197, 253, 0.25);
+}
+
 .chip-badge {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -1975,6 +2002,7 @@ html, body {
       <div class="titlebar-left">
         <span class="live-dot" id="liveDot" title="Połączono z backendem txiki.js"></span>
         <span class="app-title">Latata<span class="accent">.Hub</span></span>
+        <button class="lang-toggle-btn" id="btnToggleLang" type="button" data-tiny-nodrag title="Przełącz język na angielski (Switch to English)">🇬🇧 EN</button>
       </div>
       <div class="titlebar-actions" data-tiny-nodrag>
         <button class="icon-btn tooltip-toggle-btn active" id="btnToggleTooltips" type="button" title="Wskazówki (Tooltipy): Włączone (kliknij, aby wyłączyć)">
@@ -2848,16 +2876,698 @@ function drawSparkline(canvas, seriesList, maxFloor = 100) {
   ctx.restore();
 }
 
+
+let currentLang = localStorage.getItem('latata_lang') || 'pl';
+let latestTelemetrySnap = null;
+
+const I18N = {
+  pl: {
+    langToggle: '🇬🇧 EN',
+    langToggleTitle: 'Przełącz język na angielski (Switch to English)',
+    liveDotTitle: 'Połączono z backendem txiki.js',
+    tooltipsOnTitle: 'Wskazówki (Tooltipy): Włączone (kliknij, aby wyłączyć)',
+    tooltipsOffTitle: 'Wskazówki (Tooltipy): Wyłączone (kliknij, aby włączyć)',
+    caffeinateOnTitle: 'Tryb Caffeinate: AKTYWNY (Mac i ekran nie zasną — kliknij, aby wyłączyć)',
+    caffeinateOffTitle: 'Tryb Caffeinate: blokuj usypianie ekranu i Maca (Wył.)',
+    pin: 'Przypnij',
+    pinned: 'Przypięto',
+    pinTitle: 'Przypnij zawsze na wierzchu (Always on Top)',
+    expand: 'Rozwiń',
+    collapse: 'Zwiń',
+    compactTitle: 'Dopasowany rozmiar (356×548) / Pełna kolumna (356×760)',
+
+    tabHome: '🏠 Home',
+    tabHomeTitle: 'Home — podsumowanie Maca, kółka i baterie',
+    tabProcs: '⚡ Procesy',
+    tabProcsTitle: 'Procesy — CPU, RAM i Porty TCP',
+    tabDisk: '💾 Dysk',
+    tabDiskTitle: 'Dysk — pojemność, największe katalogi i pliki',
+    tabCleaner: '🧹 Cleaner',
+    tabCleanerTitle: 'Cleaner — czyszczenie pamięci podręcznej i śmieci',
+    tabNetwork: '🌐 Sieć',
+    tabNetworkTitle: 'Sieć — prędkość łącza i sygnał Wi-Fi',
+    tabSensors: '🌡 Sensory',
+    tabSensorsTitle: 'Sensory — temperatury, GPU i zasilanie',
+
+    subtabCpu: '💻 Procesor CPU',
+    subtabCpuTitle: 'Top 10 procesów obciążających procesor',
+    subtabRam: '🧠 Pamięć RAM',
+    subtabRamTitle: 'Top 10 procesów zużywających pamięć RAM',
+    subtabPorts: '⇄ Porty TCP',
+    subtabPortsTitle: 'Nasłuchujące porty deweloperskie i Docker',
+
+    hudCpuJumpTitle: 'Kliknij, aby zobaczyć Top 10 procesów CPU',
+    hudRamJumpTitle: 'Kliknij, aby zobaczyć Top 10 procesów RAM',
+    hudGpuJumpTitle: 'Kliknij, aby zobaczyć GPU i Temperatury',
+    hudWifiJumpTitle: 'Kliknij, aby zobaczyć Prędkość Internetu i Wi-Fi',
+    hudBatt0JumpTitle: 'Bateria MacBooka — kliknij, aby otworzyć Bateria i Zasilanie',
+    hudBtDevice: 'Urządzenie Bluetooth',
+    hudBtEmpty: 'Brak kolejnego urządzenia Bluetooth z raportowaniem baterii',
+    hudDiskJumpTitle: 'Pojemność Dysku SSD — kliknij, aby przejść do szczegółów',
+    hudCleanerBtnTitle: 'Oczyść system ze śmieci (w stylu CCleaner / Mac Sai)',
+    hudFree: 'Wolne',
+    hudFrom: 'z',
+    hudCleaner: 'Cleaner',
+
+    stripDownTitle: 'Prędkość pobierania (kliknij, aby otworzyć sekcję Sieć)',
+    stripUpTitle: 'Prędkość wysyłania (kliknij, aby otworzyć sekcję Sieć)',
+    stripPingTitle: 'Opóźnienie sieci Ping (kliknij, aby otworzyć sekcję Sieć)',
+    stripBattTitle: 'Stan baterii (kliknij, aby otworzyć sensory)',
+    stripDiskTitle: 'Pojemność dysku SSD/HDD i System Cleaner (kliknij, aby otworzyć)',
+    stripPortsTitle: 'Aktywne porty TCP Localhost / Dev (kliknij, aby otworzyć Port Inspector)',
+
+    glanceMac: 'Mac:',
+    glanceUptime: 'Uptime:',
+    glanceNet: 'Sieć:',
+    glanceTooltips: 'Tooltipy:',
+    glanceTooltipsTitle: 'Wskazówki (Tooltipy) — kliknij, aby włączyć lub wyłączyć',
+    chipThermalTitle: 'Sensory termiczne i temperatury — kliknij, aby otworzyć',
+    chipThermalName: '🌡 Termika SoC',
+    chipThermalOk: 'W normie',
+    chipThermalWarm: 'Podwyższona',
+    chipThermalHot: 'Wysoka temp.',
+    chipBattTitle: 'Diagnostyka baterii i zasilanie — kliknij, aby otworzyć',
+    chipBattName: '🔋 Bateria',
+    chipBattHealth: 'Kondycja',
+    chipBattCharging: 'Ładowanie ⚡',
+    chipNetTitle: 'Parametry łącza i opóźnienie — kliknij, aby otworzyć',
+    chipNetName: '⚡ Ping / Łącze',
+    pillLoadTitle: 'Poziom obciążenia systemu (Load Average 1m / 5m)',
+    pillSwapTitle: 'Użycie pliku wymiany Swap',
+    pillDockerTitle: 'Status środowiska deweloperskiego Docker',
+    dockerOn: 'Aktywny',
+    dockerOff: 'Wył.',
+    homeCleanRamBtn: '🧹 Odśwież RAM i DNS',
+    homeCleanRamTitle: 'Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM',
+    homeProcsBtn: '⚡ Procesy',
+    homeCleanerBtn: '🔍 Smart Cleaner',
+
+    portsTitle: 'Porty Localhost & Dev',
+    portsHeaderLabel: (n) => `Nasłuchujące porty TCP (${n})`,
+    portsCols: 'Adres • RAM • Kill',
+    portsEmpty: 'Brak aktywnych nasłuchujących portów TCP',
+    killPortTitle: (name, pid, port) => `Zwolnij port :${port} — zakończ ${name} (PID ${pid})`,
+
+    cpuTitle: 'Procesor (CPU) — Top 10',
+    cpuHeaderLabel: 'Top 10 procesów (CPU)',
+    cpuCols: 'RAM • % CPU',
+    cpuCoresTitle: 'Rdzenie (Efficiency E + Performance P)',
+    killProcTitle: (name, pid) => `Zakończ proces ${name} (PID ${pid}) • Kliknij z ⌥ Option aby wymusić (kill -9)`,
+
+    ramTitle: 'Pamięć RAM — Top 10',
+    ramHeaderLabel: 'Top 10 procesów (Pamięć RAM)',
+    ramCols: 'Udział • Zużycie',
+    ramPressureNorm: 'Ciśnienie: Niskie',
+    ramPressureMed: 'Ciśnienie: Średnie',
+    ramPressureCrit: 'Ciśnienie: Kryt.',
+    ramFree: 'Wolne',
+    ramCache: 'Cache',
+    ramUsage: 'Zużycie',
+    ramSwap: 'Swap',
+    ramLegendApp: 'App:',
+    ramLegendSys: 'Sys:',
+    ramLegendComp: 'Komp:',
+    ramCleanStatusDefault: 'Optymalizacja pamięci podręcznej i DNS',
+    ramCleanBtn: '🧹 Wyczyść RAM i DNS',
+    ramCleanBtnTitle: 'Opróżnij pamięć podręczną DNS (dscacheutil) i odśwież bufory RAM',
+    ramCleanRunning: 'Odświeżanie...',
+    ramCleanDone: (free) => `Odświeżono DNS! Wolny RAM: ${free}`,
+    ramCleanError: 'Błąd podczas odświeżania DNS',
+
+    netTitle: 'Prędkość Internetu',
+    netDownLabel: 'POBIERANIE',
+    netUpLabel: 'WYSYŁANIE',
+    netLegendDown: 'Pobieranie',
+    netLegendUp: 'Wysyłanie',
+    speedtestReady: 'Speedtest Cloudflare gotowy',
+    speedtestBtn: 'Testuj łącze',
+    speedtestRunning: 'Test...',
+
+    wifiTitle: 'Siła sygnału Wi-Fi',
+    wifiQuality: 'Jakość',
+    wifiBand: 'Pasmo',
+    wifiChannel: 'Kanał',
+    wifiSignal: 'Sygnał (RSSI)',
+    wifiNoise: 'Szum (Noise)',
+    wifiSnr: 'Odstęp SNR',
+    wifiNone: 'Brak sieci',
+
+    gpuTitle: 'GPU i Temperatury',
+    thermalOk: 'Termika: OK',
+    thermalWarm: 'Termika: Ciepło',
+    thermalHot: 'Termika: Gorąco',
+    vramUsed: 'VRAM',
+    vramAlloc: 'Alokacja',
+    tempCpuAvg: 'CPU Średnia',
+    tempCoresPE: 'Rdzenie P/E',
+    tempGpu: 'Grafika GPU',
+    tempSoc: 'SoC Max Die',
+    tempSsd: 'Dysk SSD',
+    tempBatt: 'Bateria',
+
+    battTitle: 'Bateria i Zasilanie',
+    battCharging: (w) => `Ładowanie ⚡ (${w}W)`,
+    battAdapter: 'Zasilacz 🔌',
+    battOnBattery: 'Na baterii 🔋',
+    battHealth: 'Kondycja',
+    battCycles: 'Cykle',
+    battPowerLoad: 'Pobór mocy',
+    battPowerIn: 'Wejście USB-C',
+    battVoltAmp: 'Napięcie/Prąd',
+    battBtHeader: (n) => `Baterie Bluetooth (${n})`,
+    battBtCols: 'Poziom naładowania',
+    battBtEmpty: 'Brak połączonych akcesoriów Bluetooth z baterią',
+    battCalculating: 'Obliczanie czasu...',
+    battToFull: 'do pełnego',
+    battRemaining: 'pozostało',
+    battChargingCell: 'Ładowanie ogniwa',
+    battMainsPower: 'Zasilanie sieciowe',
+    battDischarging: 'Praca na baterii',
+    btCharging: '⚡ Ładowanie',
+    btHeadset: 'Słuchawka BT (HFP)',
+    btConnected: 'Połączono',
+
+    diskTitle: (name) => `Dysk (${name}) & Pojemność`,
+    diskOccupied: 'zajęte',
+    diskFreeSuffix: 'GB wolne',
+    diskOccupiedLabel: 'Zajęte',
+    diskPurgeableBuf: 'Bufory APFS',
+    diskTemp: 'Temp. SSD',
+    diskUptime: 'Uptime',
+    diskSysVolume: 'Dysk systemowy',
+    diskExtVolume: (m) => `Dysk zewn. (${m})`,
+    diskFreeVolume: 'wolne',
+    diskUsageTitle: 'Największe katalogi i pliki',
+    diskScopeHome: '🏠 Domowy (~)',
+    diskScopeApps: '🚀 Aplikacje',
+    diskScopeDownloads: '📥 Pobrane',
+    diskScopeDesktop: '🖥 Biurko',
+    diskDirsHeader: (n) => `📁 Największe katalogi (${n})`,
+    diskDirsCols: 'Kliknij = wejdź • Rozmiar',
+    diskFilesHeader: (n) => `📄 Największe pliki (${n})`,
+    diskFilesCols: 'Lokalizacja • Rozmiar',
+    diskDirsEmpty: 'Brak podkatalogów w tej lokalizacji',
+    diskFilesEmpty: 'Brak dużych plików w tej lokalizacji',
+    diskScanning: 'Skanowanie...',
+    diskScanError: 'Błąd skanowania',
+    revealInFinder: 'Pokaż w Finderze',
+
+    cleanerTitle: '🧹 Czyszczenie Systemu (Smart Cleaner)',
+    cleanerScanning: 'Skanowanie...',
+    cleanerToRecover: (bytes) => `Do odzyskania: ${bytes}`,
+    cleanerPrompt: 'Zaznacz kategorie śmieci do usunięcia',
+    cleanerScanBtn: '🔍 Skanuj',
+    cleanerCleanBtn: '🧹 Wyczyść',
+    cleanerCleanBtnBytes: (b) => `🧹 Wyczyść (${b})`,
+    cleanerScanningProgress: 'Skanowanie katalogów Cache, Logów, Kosza i Dev...',
+    cleanerScanFinished: (b) => `Skan zakończony: wykryto ${b} śmieci`,
+    cleanerScanError: 'Błąd podczas skanowania plików tymczasowych',
+    cleanerSelectWarning: 'Zaznacz przynajmniej jedną kategorię do wyczyszczenia!',
+    cleanerTrashConfirm: 'Opróżnienie Kosza trwale usunie wszystkie pliki z folderu ~/.Trash.\n\nCzy na pewno chcesz kontynuować?',
+    cleanerCleaning: 'Czyszczenie...',
+    cleanerCleaningProgress: 'Usuwanie zaznaczonych śmieci i czyszczenie DNS...',
+    cleanerSuccess: (freed, items) => `✅ Oczyszczono ${freed} (${items} elementów)!`,
+    cleanerSuccessNoBytes: (items) => `✅ Wyczyszczono (${items} elementów + cache DNS)!`,
+    cleanerError: 'Błąd podczas czyszczenia wybranych kategorii',
+    cleanerDnsDesc: 'Szybkie czyszczenie pamięci podręcznej DNS i buforów',
+
+    catCachesTitle: 'Pamięć podręczna aplikacji',
+    catCachesSub: '~/Library/Caches (bufory aplikacji)',
+    catDevTitle: 'Cache deweloperski i pakietów',
+    catDevSub: 'npm, pip, Homebrew, Xcode DerivedData',
+    catLogsTitle: 'Logi i raporty błędów',
+    catLogsSub: '~/Library/Logs & CrashReporter',
+    catTrashTitle: 'Kosz systemowy',
+    catTrashSub: (count) => count > 0 ? `~/.Trash (${count} elementów)` : '~/.Trash (Kosz jest pusty)',
+    catTempTitle: 'Pliki tymczasowe i Cache DNS',
+    catTempSub: 'Pliki tymczasowe macOS + dscacheutil DNS',
+  },
+  en: {
+    langToggle: '🇵🇱 PL',
+    langToggleTitle: 'Switch language to Polish (Przełącz na polski)',
+    liveDotTitle: 'Connected to txiki.js backend',
+    tooltipsOnTitle: 'Tips & Tooltips: ON (click to disable)',
+    tooltipsOffTitle: 'Tips & Tooltips: OFF (click to enable)',
+    caffeinateOnTitle: 'Caffeinate Mode: ACTIVE (Mac & screen won\'t sleep — click to disable)',
+    caffeinateOffTitle: 'Caffeinate Mode: prevent Mac & screen sleep (Off)',
+    pin: 'Pin',
+    pinned: 'Pinned',
+    pinTitle: 'Keep Always on Top',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    compactTitle: 'Compact widget (356×548) / Full column (356×760)',
+
+    tabHome: '🏠 Home',
+    tabHomeTitle: 'Home — Mac overview, status rings & batteries',
+    tabProcs: '⚡ Processes',
+    tabProcsTitle: 'Processes — CPU, RAM & TCP Ports',
+    tabDisk: '💾 Disk',
+    tabDiskTitle: 'Disk — capacity, largest folders & files',
+    tabCleaner: '🧹 Cleaner',
+    tabCleanerTitle: 'Cleaner — cache & system junk removal',
+    tabNetwork: '🌐 Network',
+    tabNetworkTitle: 'Network — speed & Wi-Fi signal metrics',
+    tabSensors: '🌡 Sensors',
+    tabSensorsTitle: 'Sensors — thermals, GPU & power telemetry',
+
+    subtabCpu: '💻 CPU Processor',
+    subtabCpuTitle: 'Top 10 processes consuming CPU',
+    subtabRam: '🧠 RAM Memory',
+    subtabRamTitle: 'Top 10 processes consuming RAM memory',
+    subtabPorts: '⇄ TCP Ports',
+    subtabPortsTitle: 'Listening developer ports & Docker containers',
+
+    hudCpuJumpTitle: 'Click to inspect Top 10 CPU processes',
+    hudRamJumpTitle: 'Click to inspect Top 10 RAM processes',
+    hudGpuJumpTitle: 'Click to inspect GPU & Thermals',
+    hudWifiJumpTitle: 'Click to inspect Network Speed & Wi-Fi',
+    hudBatt0JumpTitle: 'MacBook Battery — click to open Battery & Power',
+    hudBtDevice: 'Bluetooth Device',
+    hudBtEmpty: 'No additional Bluetooth device reporting battery',
+    hudDiskJumpTitle: 'SSD Storage Capacity — click for details',
+    hudCleanerBtnTitle: 'Clean system junk (CCleaner / Mac Sai style)',
+    hudFree: 'Free',
+    hudFrom: 'of',
+    hudCleaner: 'Cleaner',
+
+    stripDownTitle: 'Download speed (click to open Network section)',
+    stripUpTitle: 'Upload speed (click to open Network section)',
+    stripPingTitle: 'Network Ping latency (click to open Network section)',
+    stripBattTitle: 'Battery level (click to open Sensors)',
+    stripDiskTitle: 'SSD/HDD Storage & System Cleaner (click to open)',
+    stripPortsTitle: 'Active Localhost / Dev TCP ports (click to open Port Inspector)',
+
+    glanceMac: 'Mac:',
+    glanceUptime: 'Uptime:',
+    glanceNet: 'Net:',
+    glanceTooltips: 'Tooltips:',
+    glanceTooltipsTitle: 'Tips & Tooltips — click to toggle ON/OFF',
+    chipThermalTitle: 'Thermal sensors & temperatures — click to inspect',
+    chipThermalName: '🌡 SoC Thermals',
+    chipThermalOk: 'Nominal',
+    chipThermalWarm: 'Warm',
+    chipThermalHot: 'High temp',
+    chipBattTitle: 'Battery health & power telemetry — click to inspect',
+    chipBattName: '🔋 Battery',
+    chipBattHealth: 'Health',
+    chipBattCharging: 'Charging ⚡',
+    chipNetTitle: 'Link latency & throughput — click to inspect',
+    chipNetName: '⚡ Ping / Link',
+    pillLoadTitle: 'System Load Average (1m / 5m)',
+    pillSwapTitle: 'Swap file memory usage',
+    pillDockerTitle: 'Docker development environment status',
+    dockerOn: 'Active',
+    dockerOff: 'Off',
+    homeCleanRamBtn: '🧹 Flush RAM & DNS',
+    homeCleanRamTitle: 'Flush DNS cache (dscacheutil) and update RAM buffers',
+    homeProcsBtn: '⚡ Processes',
+    homeCleanerBtn: '🔍 Smart Cleaner',
+
+    portsTitle: 'Localhost & Dev Ports',
+    portsHeaderLabel: (n) => `Listening TCP Ports (${n})`,
+    portsCols: 'Address • RAM • Kill',
+    portsEmpty: 'No active listening TCP ports',
+    killPortTitle: (name, pid, port) => `Release port :${port} — terminate ${name} (PID ${pid})`,
+
+    cpuTitle: 'Processor (CPU) — Top 10',
+    cpuHeaderLabel: 'Top 10 Processes (CPU)',
+    cpuCols: 'RAM • % CPU',
+    cpuCoresTitle: 'Cores (Efficiency E + Performance P)',
+    killProcTitle: (name, pid) => `Terminate ${name} (PID ${pid}) • ⌥ Option-click to force kill (kill -9)`,
+
+    ramTitle: 'RAM Memory — Top 10',
+    ramHeaderLabel: 'Top 10 Processes (RAM Memory)',
+    ramCols: 'Share • Memory',
+    ramPressureNorm: 'Pressure: Low',
+    ramPressureMed: 'Pressure: Medium',
+    ramPressureCrit: 'Pressure: Crit.',
+    ramFree: 'Free',
+    ramCache: 'Cache',
+    ramUsage: 'Usage',
+    ramSwap: 'Swap',
+    ramLegendApp: 'App:',
+    ramLegendSys: 'Sys:',
+    ramLegendComp: 'Comp:',
+    ramCleanStatusDefault: 'Cache optimization & DNS cache flush',
+    ramCleanBtn: '🧹 Flush RAM & DNS',
+    ramCleanBtnTitle: 'Flush DNS cache (dscacheutil) and refresh RAM buffers',
+    ramCleanRunning: 'Flushing...',
+    ramCleanDone: (free) => `DNS flushed! Free RAM: ${free}`,
+    ramCleanError: 'Error flushing DNS cache',
+
+    netTitle: 'Internet Speed',
+    netDownLabel: 'DOWNLOAD',
+    netUpLabel: 'UPLOAD',
+    netLegendDown: 'Download',
+    netLegendUp: 'Upload',
+    speedtestReady: 'Cloudflare Speedtest ready',
+    speedtestBtn: 'Run Speedtest',
+    speedtestRunning: 'Testing...',
+
+    wifiTitle: 'Wi-Fi Signal Strength',
+    wifiQuality: 'Quality',
+    wifiBand: 'Band',
+    wifiChannel: 'Channel',
+    wifiSignal: 'Signal (RSSI)',
+    wifiNoise: 'Noise',
+    wifiSnr: 'SNR Margin',
+    wifiNone: 'No network',
+
+    gpuTitle: 'GPU & Temperatures',
+    thermalOk: 'Thermals: OK',
+    thermalWarm: 'Thermals: Warm',
+    thermalHot: 'Thermals: Hot',
+    vramUsed: 'VRAM',
+    vramAlloc: 'Allocated',
+    tempCpuAvg: 'CPU Avg',
+    tempCoresPE: 'P/E Cores',
+    tempGpu: 'GPU Graphics',
+    tempSoc: 'SoC Max Die',
+    tempSsd: 'SSD Drive',
+    tempBatt: 'Battery',
+
+    battTitle: 'Battery & Power',
+    battCharging: (w) => `Charging ⚡ (${w}W)`,
+    battAdapter: 'AC Adapter 🔌',
+    battOnBattery: 'On Battery 🔋',
+    battHealth: 'Health',
+    battCycles: 'Cycles',
+    battPowerLoad: 'Power Draw',
+    battPowerIn: 'USB-C Input',
+    battVoltAmp: 'Voltage/Current',
+    battBtHeader: (n) => `Bluetooth Batteries (${n})`,
+    battBtCols: 'Battery Level',
+    battBtEmpty: 'No connected Bluetooth accessories with battery reporting',
+    battCalculating: 'Calculating time...',
+    battToFull: 'to full',
+    battRemaining: 'remaining',
+    battChargingCell: 'Charging battery',
+    battMainsPower: 'AC connected',
+    battDischarging: 'On battery power',
+    btCharging: '⚡ Charging',
+    btHeadset: 'BT Headset (HFP)',
+    btConnected: 'Connected',
+
+    diskTitle: (name) => `Disk (${name}) & Capacity`,
+    diskOccupied: 'used',
+    diskFreeSuffix: 'GB free',
+    diskOccupiedLabel: 'Used',
+    diskPurgeableBuf: 'APFS buffers',
+    diskTemp: 'SSD Temp.',
+    diskUptime: 'Uptime',
+    diskSysVolume: 'System Volume',
+    diskExtVolume: (m) => `Ext. Drive (${m})`,
+    diskFreeVolume: 'free',
+    diskUsageTitle: 'Largest Folders & Files',
+    diskScopeHome: '🏠 Home (~)',
+    diskScopeApps: '🚀 Applications',
+    diskScopeDownloads: '📥 Downloads',
+    diskScopeDesktop: '🖥 Desktop',
+    diskDirsHeader: (n) => `📁 Largest Folders (${n})`,
+    diskDirsCols: 'Click = explore • Size',
+    diskFilesHeader: (n) => `📄 Largest Files (${n})`,
+    diskFilesCols: 'Location • Size',
+    diskDirsEmpty: 'No subfolders in this location',
+    diskFilesEmpty: 'No large files in this location',
+    diskScanning: 'Scanning...',
+    diskScanError: 'Scan error',
+    revealInFinder: 'Reveal in Finder',
+
+    cleanerTitle: '🧹 System Cleanup (Smart Cleaner)',
+    cleanerScanning: 'Scanning...',
+    cleanerToRecover: (bytes) => `Reclaimable: ${bytes}`,
+    cleanerPrompt: 'Select junk categories to clean',
+    cleanerScanBtn: '🔍 Scan',
+    cleanerCleanBtn: '🧹 Clean',
+    cleanerCleanBtnBytes: (b) => `🧹 Clean (${b})`,
+    cleanerScanningProgress: 'Scanning Caches, Logs, Trash and Dev folders...',
+    cleanerScanFinished: (b) => `Scan completed: found ${b} junk`,
+    cleanerScanError: 'Error scanning temporary files',
+    cleanerSelectWarning: 'Select at least one category to clean!',
+    cleanerTrashConfirm: 'Emptying the Trash permanently deletes all files in ~/.Trash.\n\nAre you sure you want to proceed?',
+    cleanerCleaning: 'Cleaning...',
+    cleanerCleaningProgress: 'Removing selected junk files & flushing DNS...',
+    cleanerSuccess: (freed, items) => `✅ Cleaned ${freed} (${items} items)!`,
+    cleanerSuccessNoBytes: (items) => `✅ Cleaned (${items} items + DNS cache)!`,
+    cleanerError: 'Error cleaning selected categories',
+    cleanerDnsDesc: 'Quick DNS cache flush & buffer release',
+
+    catCachesTitle: 'App Caches',
+    catCachesSub: '~/Library/Caches (application buffers)',
+    catDevTitle: 'Developer & Package Cache',
+    catDevSub: 'npm, pip, Homebrew, Xcode DerivedData',
+    catLogsTitle: 'Logs & Crash Reports',
+    catLogsSub: '~/Library/Logs & CrashReporter',
+    catTrashTitle: 'User Trash',
+    catTrashSub: (count) => count > 0 ? `~/.Trash (${count} items)` : '~/.Trash (Trash is empty)',
+    catTempTitle: 'Temporary Files & DNS Cache',
+    catTempSub: 'macOS temporary buffers + dscacheutil DNS',
+  }
+};
+
+function t(key, ...args) {
+  const dict = I18N[currentLang] || I18N.pl;
+  const val = dict[key] ?? I18N.pl[key] ?? key;
+  if (typeof val === 'function') {
+    return val(...args);
+  }
+  return val;
+}
+
+function setLanguage(lang) {
+  currentLang = lang === 'en' ? 'en' : 'pl';
+  localStorage.setItem('latata_lang', currentLang);
+  document.documentElement.lang = currentLang;
+
+  const btnLang = $('btnToggleLang');
+  if (btnLang) {
+    btnLang.textContent = t('langToggle');
+    btnLang.title = t('langToggleTitle');
+  }
+
+  if ($('liveDot')) $('liveDot').title = t('liveDotTitle');
+  if ($('btnPin')) $('btnPin').title = t('pinTitle');
+  if ($('btnCompact')) $('btnCompact').title = t('compactTitle');
+
+  const isPinned = $('btnPin')?.classList.contains('active');
+  if ($('layerLabel') && typeof isPinned === 'boolean') {
+    $('layerLabel').textContent = isPinned ? t('pinned') : t('pin');
+  }
+  const isCompact = $('appShell')?.classList.contains('compact-mode');
+  if ($('compactLabel') && typeof isCompact === 'boolean') {
+    $('compactLabel').textContent = isCompact ? t('expand') : t('collapse');
+  }
+  updateTooltipsToggleUI();
+
+  const tabDashboard = document.querySelector('.nav-tab[data-tab="dashboard"]');
+  if (tabDashboard) { tabDashboard.textContent = t('tabHome'); tabDashboard.title = t('tabHomeTitle'); }
+  const tabProcs = document.querySelector('.nav-tab[data-tab="procs"]');
+  if (tabProcs) { tabProcs.textContent = t('tabProcs'); tabProcs.title = t('tabProcsTitle'); }
+  const tabDisk = document.querySelector('.nav-tab[data-tab="disk"]');
+  if (tabDisk) { tabDisk.textContent = t('tabDisk'); tabDisk.title = t('tabDiskTitle'); }
+  const tabCleaner = document.querySelector('.nav-tab[data-tab="cleaner"]');
+  if (tabCleaner) { tabCleaner.textContent = t('tabCleaner'); tabCleaner.title = t('tabCleanerTitle'); }
+  const tabNetwork = document.querySelector('.nav-tab[data-tab="network"]');
+  if (tabNetwork) { tabNetwork.textContent = t('tabNetwork'); tabNetwork.title = t('tabNetworkTitle'); }
+  const tabSensors = document.querySelector('.nav-tab[data-tab="sensors"]');
+  if (tabSensors) { tabSensors.textContent = t('tabSensors'); tabSensors.title = t('tabSensorsTitle'); }
+
+  const subCpu = $('subtabCpu');
+  if (subCpu) { subCpu.textContent = t('subtabCpu'); subCpu.title = t('subtabCpuTitle'); }
+  const subRam = $('subtabRam');
+  if (subRam) { subRam.textContent = t('subtabRam'); subRam.title = t('subtabRamTitle'); }
+  const subPorts = $('subtabPorts');
+  if (subPorts) {
+    const pCount = $('procsPortsCount')?.textContent || '0';
+    subPorts.innerHTML = `${t('subtabPorts')} (<span id="procsPortsCount">${pCount}</span>)`;
+    subPorts.title = t('subtabPortsTitle');
+  }
+
+  const hudCpu = document.querySelector('#miniHudSystem .hud-tile[data-jump="top-cpu"]');
+  if (hudCpu) hudCpu.title = t('hudCpuJumpTitle');
+  const hudRam = document.querySelector('#miniHudSystem .hud-tile[data-jump="top-ram"]');
+  if (hudRam) hudRam.title = t('hudRamJumpTitle');
+  const hudGpu = document.querySelector('#miniHudSystem .hud-tile[data-jump="power"]');
+  if (hudGpu) hudGpu.title = t('hudGpuJumpTitle');
+  const hudWifi = document.querySelector('#miniHudSystem .hud-tile[data-jump="network"]');
+  if (hudWifi) hudWifi.title = t('hudWifiJumpTitle');
+  const hudBatt0 = $('btSlot0');
+  if (hudBatt0) hudBatt0.title = t('hudBatt0JumpTitle');
+  const diskHudBar = $('diskHudBar');
+  if (diskHudBar) diskHudBar.title = t('hudDiskJumpTitle');
+  const btnHudCleaner = $('btnHudCleaner');
+  if (btnHudCleaner) btnHudCleaner.title = t('hudCleanerBtnTitle');
+
+  const stripItems = document.querySelectorAll('.mini-strip-item');
+  if (stripItems[0]) stripItems[0].title = t('stripDownTitle');
+  if (stripItems[1]) stripItems[1].title = t('stripUpTitle');
+  if (stripItems[2]) stripItems[2].title = t('stripPingTitle');
+  if (stripItems[3]) stripItems[3].title = t('stripBattTitle');
+  const stripDisk = $('stripDiskItem');
+  if (stripDisk) stripDisk.title = t('stripDiskTitle');
+  const stripPorts = $('stripPortsItem');
+  if (stripPorts) stripPorts.title = t('stripPortsTitle');
+
+  const glanceLabels = document.querySelectorAll('.home-meta-bar .meta-label');
+  if (glanceLabels[0]) glanceLabels[0].textContent = t('glanceMac');
+  if (glanceLabels[1]) glanceLabels[1].textContent = t('glanceUptime');
+  if (glanceLabels[2]) glanceLabels[2].textContent = t('glanceNet');
+  if (glanceLabels[3]) glanceLabels[3].textContent = t('glanceTooltips');
+  const btnHomeTips = $('btnHomeToggleTooltips');
+  if (btnHomeTips) btnHomeTips.title = t('glanceTooltipsTitle');
+
+  const chips = document.querySelectorAll('.home-chips-grid .home-chip');
+  if (chips[0]) {
+    chips[0].title = t('chipThermalTitle');
+    const ct = chips[0].querySelector('.chip-title');
+    if (ct) ct.textContent = t('chipThermalName');
+  }
+  if (chips[1]) {
+    chips[1].title = t('chipBattTitle');
+    const ct = chips[1].querySelector('.chip-title');
+    if (ct) ct.textContent = t('chipBattName');
+  }
+  if (chips[2]) {
+    chips[2].title = t('chipNetTitle');
+    const ct = chips[2].querySelector('.chip-title');
+    if (ct) ct.textContent = t('chipNetName');
+  }
+
+  const sysPills = document.querySelectorAll('.home-system-status-row .home-sys-pill');
+  if (sysPills[0]) sysPills[0].title = t('pillLoadTitle');
+  if (sysPills[1]) sysPills[1].title = t('pillSwapTitle');
+  if (sysPills[2]) sysPills[2].title = t('pillDockerTitle');
+
+  const btnHomeClean = $('btnHomeCleanRam');
+  if (btnHomeClean) {
+    btnHomeClean.title = t('homeCleanRamTitle');
+    const lbl = $('homeCleanRamLabel');
+    if (lbl) lbl.textContent = t('homeCleanRamBtn');
+  }
+  const btnHomeP = $('btnHomeProcs');
+  if (btnHomeP) btnHomeP.textContent = t('homeProcsBtn');
+  const btnHomeC = $('btnHomeCleaner');
+  if (btnHomeC) btnHomeC.textContent = t('homeCleanerBtn');
+
+  const secPortsH2 = document.querySelector('#sec-ports h2');
+  if (secPortsH2) secPortsH2.textContent = t('portsTitle');
+  const portsCols = document.querySelector('.ports-block .top-procs-cols');
+  if (portsCols) portsCols.textContent = t('portsCols');
+
+  const secCpuH2 = document.querySelector('#sec-cpu h2');
+  if (secCpuH2) secCpuH2.textContent = t('cpuTitle');
+  const cpuProcHeader = document.querySelector('#sec-cpu .top-procs-header span:first-child');
+  if (cpuProcHeader) cpuProcHeader.textContent = t('cpuHeaderLabel');
+  const cpuCols = document.querySelector('#sec-cpu .top-procs-cols');
+  if (cpuCols) cpuCols.textContent = t('cpuCols');
+  const coresTitle = document.querySelector('.cores-section-title');
+  if (coresTitle) coresTitle.textContent = t('cpuCoresTitle');
+
+  const secRamH2 = document.querySelector('#sec-ram h2');
+  if (secRamH2) secRamH2.textContent = t('ramTitle');
+  const ramProcHeader = document.querySelector('#sec-ram .top-procs-header span:first-child');
+  if (ramProcHeader) ramProcHeader.textContent = t('ramHeaderLabel');
+  const ramCols = document.querySelector('#sec-ram .top-procs-cols');
+  if (ramCols) ramCols.textContent = t('ramCols');
+  const btnCleanRam = $('btnCleanRam');
+  if (btnCleanRam) {
+    btnCleanRam.textContent = t('ramCleanBtn');
+    btnCleanRam.title = t('ramCleanBtnTitle');
+  }
+  const ramCleanStatus = $('ramCleanStatus');
+  if (ramCleanStatus) ramCleanStatus.textContent = t('ramCleanStatusDefault');
+
+  const secNetH2 = document.querySelector('#sec-net h2');
+  if (secNetH2) secNetH2.textContent = t('netTitle');
+  const downLabel = document.querySelector('.down-box .net-dir-label');
+  if (downLabel) downLabel.innerHTML = `<span class="arrow-down">↓</span> ${t('netDownLabel')}`;
+  const upLabel = document.querySelector('.up-box .net-dir-label');
+  if (upLabel) upLabel.innerHTML = `<span class="arrow-up">↑</span> ${t('netUpLabel')}`;
+  const netLegend = document.querySelectorAll('.sparkline-legend span');
+  if (netLegend[0]) netLegend[0].innerHTML = `<i class="leg-dot bg-emerald"></i> ${t('netLegendDown')}`;
+  if (netLegend[1]) netLegend[1].innerHTML = `<i class="leg-dot bg-sky"></i> ${t('netLegendUp')}`;
+  const btnSpeedtest = $('btnSpeedtest');
+  if (btnSpeedtest) btnSpeedtest.textContent = t('speedtestBtn');
+  const speedtestStatus = $('speedtestStatus');
+  if (speedtestStatus) speedtestStatus.textContent = t('speedtestReady');
+
+  const secWifiH2 = document.querySelector('#sec-wifi h2');
+  if (secWifiH2) secWifiH2.textContent = t('wifiTitle');
+  const miniStats = document.querySelectorAll('#sec-wifi .mini-stat .m-label');
+  if (miniStats[0]) miniStats[0].textContent = t('wifiSignal');
+  if (miniStats[1]) miniStats[1].textContent = t('wifiNoise');
+  if (miniStats[2]) miniStats[2].textContent = t('wifiSnr');
+
+  const secGpuH2 = document.querySelector('#sec-gpu h2');
+  if (secGpuH2) secGpuH2.textContent = t('gpuTitle');
+  const gpuMetaPairs = document.querySelectorAll('#sec-gpu .meta-pair span');
+  if (gpuMetaPairs[0]) gpuMetaPairs[0].textContent = t('vramUsed');
+  if (gpuMetaPairs[1]) gpuMetaPairs[1].textContent = t('vramAlloc');
+  const tempChips = document.querySelectorAll('.temps-grid .temp-chip .t-name');
+  if (tempChips[0]) tempChips[0].textContent = t('tempCpuAvg');
+  if (tempChips[1]) tempChips[1].textContent = t('tempCoresPE');
+  if (tempChips[2]) tempChips[2].textContent = t('tempGpu');
+  if (tempChips[3]) tempChips[3].textContent = t('tempSoc');
+  if (tempChips[4]) tempChips[4].textContent = t('tempSsd');
+  if (tempChips[5]) tempChips[5].textContent = t('tempBatt');
+
+  const secBattH2 = document.querySelector('#sec-battery h2');
+  if (secBattH2) secBattH2.textContent = t('battTitle');
+  const battMetaPairs = document.querySelectorAll('#sec-battery .meta-pair span');
+  if (battMetaPairs[0]) battMetaPairs[0].textContent = t('battHealth');
+  if (battMetaPairs[1]) battMetaPairs[1].textContent = t('battCycles');
+  const battMiniStats = document.querySelectorAll('#sec-battery .mini-stat .m-label');
+  if (battMiniStats[0]) battMiniStats[0].textContent = t('battPowerLoad');
+  if (battMiniStats[1]) battMiniStats[1].textContent = t('battPowerIn');
+  if (battMiniStats[2]) battMiniStats[2].textContent = t('battVoltAmp');
+  const btCols = document.querySelector('#btDevicesBlock .top-procs-cols');
+  if (btCols) btCols.textContent = t('battBtCols');
+
+  const diskUsageH2 = document.querySelector('#diskUsageBlock h2');
+  if (diskUsageH2) diskUsageH2.textContent = t('diskUsageTitle');
+  const scopeBtns = document.querySelectorAll('.disk-scope-pills [data-disk-scope]');
+  if (scopeBtns[0]) scopeBtns[0].textContent = t('diskScopeHome');
+  if (scopeBtns[1]) scopeBtns[1].textContent = t('diskScopeApps');
+  if (scopeBtns[2]) scopeBtns[2].textContent = t('diskScopeDownloads');
+  if (scopeBtns[3]) scopeBtns[3].textContent = t('diskScopeDesktop');
+
+  const cleanerH2 = document.querySelector('#sec-cleaner h2');
+  if (cleanerH2) cleanerH2.textContent = t('cleanerTitle');
+  const btnScanJunk = $('btnScanJunk');
+  if (btnScanJunk) btnScanJunk.textContent = t('cleanerScanBtn');
+  const btnCleanRamAlt = $('btnCleanRamAlt');
+  if (btnCleanRamAlt) {
+    btnCleanRamAlt.textContent = t('ramCleanBtn');
+    btnCleanRamAlt.title = t('ramCleanBtnTitle');
+  }
+  const cleanerDnsStatus = $('cleanerDnsStatus');
+  if (cleanerDnsStatus) cleanerDnsStatus.textContent = t('cleanerDnsDesc');
+
+  if (window.tiny?.api) {
+    tiny.api.call('setLanguage', { lang: currentLang }).catch(() => {});
+  }
+
+  if (latestTelemetrySnap) {
+    renderTelemetry(latestTelemetrySnap);
+  }
+  if (latestJunkData) {
+    renderJunkCleaner(latestJunkData);
+  }
+  if (latestDiskUsageData) {
+    renderDiskUsage(latestDiskUsageData);
+  }
+}
+
 function applyWindowModeUI(desktopWidgetMode, compactMode) {
   if (typeof desktopWidgetMode === 'boolean') {
     const isAlwaysOnTop = !desktopWidgetMode;
     $('btnPin').classList.toggle('active', isAlwaysOnTop);
-    $('layerLabel').textContent = isAlwaysOnTop ? 'Przypięto' : 'Przypnij';
+    $('layerLabel').textContent = isAlwaysOnTop ? t('pinned') : t('pin');
   }
   if (typeof compactMode === 'boolean') {
     $('appShell').classList.toggle('compact-mode', compactMode);
     $('btnCompact').classList.toggle('active', !compactMode);
-    $('compactLabel').textContent = compactMode ? 'Rozwiń' : 'Zwiń';
+    $('compactLabel').textContent = compactMode ? t('expand') : t('collapse');
     updateVisibleCards();
   }
 }
@@ -2933,7 +3643,7 @@ function renderDiskUsage(usage) {
 
   const badge = $('diskUsagePathBadge');
   if (badge) {
-    badge.textContent = usage.displayPath || '~ (Katalog domowy)';
+    badge.textContent = usage.displayPath || (currentLang === 'en' ? '~ (Home folder)' : '~ (Katalog domowy)');
     badge.title = usage.rootPath || '';
   }
 
@@ -2941,16 +3651,16 @@ function renderDiskUsage(usage) {
   const files = Array.isArray(usage.topFiles) ? usage.topFiles : [];
 
   if ($('topDirsHeaderLabel')) {
-    $('topDirsHeaderLabel').textContent = `📁 Największe katalogi (${dirs.length})`;
+    $('topDirsHeaderLabel').textContent = t('diskDirsHeader', dirs.length);
   }
   if ($('topFilesHeaderLabel')) {
-    $('topFilesHeaderLabel').textContent = `📄 Największe pliki (${files.length})`;
+    $('topFilesHeaderLabel').textContent = t('diskFilesHeader', files.length);
   }
 
   const dirsEl = $('topDirsList');
   if (dirsEl) {
     if (dirs.length === 0) {
-      dirsEl.innerHTML = `<div class="port-empty">Brak podkatalogów w tej lokalizacji</div>`;
+      dirsEl.innerHTML = `<div class="port-empty">${esc(t('diskDirsEmpty'))}</div>`;
     } else {
       const maxDirB = Math.max(1024, ...dirs.map((d) => Number(d.bytes) || 0));
       dirsEl.innerHTML = dirs
@@ -2960,7 +3670,7 @@ function renderDiskUsage(usage) {
           const icon = d.isApp ? '🚀' : '📁';
           const valColor = b >= 1024 * 1024 * 1024 ? '#fcd34d' : '#7dd3fc';
           return `
-          <div class="proc-row dir-row-clickable" data-drill-dir="${esc(d.path)}" title="Kliknij, aby wejść w głąb katalogu: ${esc(d.shortPath)}">
+          <div class="proc-row dir-row-clickable" data-drill-dir="${esc(d.path)}" title="${esc(t('revealInFinder'))}: ${esc(d.shortPath)}">
             <div class="proc-bar-bg disk-dir-bar" style="width: ${barW.toFixed(1)}%"></div>
             <div class="proc-left">
               <span class="proc-rank">#${idx + 1}</span>
@@ -2972,7 +3682,7 @@ function renderDiskUsage(usage) {
             </div>
             <div class="proc-right">
               <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
-              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(d.path)}" title="Pokaż w Finderze: ${esc(d.shortPath)}">📂</button>
+              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(d.path)}" title="${esc(t('revealInFinder'))}: ${esc(d.shortPath)}">📂</button>
             </div>
           </div>`;
         })
@@ -2983,7 +3693,7 @@ function renderDiskUsage(usage) {
   const filesEl = $('topFilesList');
   if (filesEl) {
     if (files.length === 0) {
-      filesEl.innerHTML = `<div class="port-empty">Brak dużych plików w tej lokalizacji</div>`;
+      filesEl.innerHTML = `<div class="port-empty">${esc(t('diskFilesEmpty'))}</div>`;
     } else {
       const maxFileB = Math.max(1024, ...files.map((f) => Number(f.bytes) || 0));
       filesEl.innerHTML = files
@@ -3004,7 +3714,7 @@ function renderDiskUsage(usage) {
             </div>
             <div class="proc-right">
               <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
-              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(f.path)}" title="Pokaż plik w Finderze: ${esc(f.shortPath)}">📂</button>
+              <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(f.path)}" title="${esc(t('revealInFinder'))}: ${esc(f.shortPath)}">📂</button>
             </div>
           </div>`;
         })
@@ -3044,22 +3754,30 @@ function renderJunkCleaner(junk) {
 
   const hudBadge = $('hudJunkBadge');
   if (hudBadge) {
-    hudBadge.textContent = totalBytes > 1024 * 1024 ? fmtBytes(totalBytes, 0) : 'Cleaner';
+    hudBadge.textContent = totalBytes > 1024 * 1024 ? fmtBytes(totalBytes, 0) : t('hudCleaner');
   }
 
   const totalBadge = $('junkTotalBadge');
   if (totalBadge) {
-    totalBadge.textContent = `Do odzyskania: ${fmtBytes(selectedBytes, 1)}`;
+    totalBadge.textContent = t('cleanerToRecover', fmtBytes(selectedBytes, 1));
     totalBadge.className = selectedBytes > 50 * 1024 * 1024 ? 'card-pill warn' : 'card-pill good';
   }
 
   const btnClean = $('btnCleanJunk');
   if (btnClean && !isCleaningOrScanning) {
-    btnClean.textContent = selectedBytes > 0 ? `🧹 Wyczyść (${fmtBytes(selectedBytes, 0)})` : '🧹 Wyczyść';
+    btnClean.textContent = selectedBytes > 0 ? t('cleanerCleanBtnBytes', fmtBytes(selectedBytes, 0)) : t('cleanerCleanBtn');
   }
 
   const listEl = $('junkCategoriesList');
   if (!listEl) return;
+
+  const catKeyMap = {
+    caches: { title: 'catCachesTitle', sub: 'catCachesSub' },
+    dev: { title: 'catDevTitle', sub: 'catDevSub' },
+    logs: { title: 'catLogsTitle', sub: 'catLogsSub' },
+    trash: { title: 'catTrashTitle', sub: 'catTrashSub' },
+    temp: { title: 'catTempTitle', sub: 'catTempSub' },
+  };
 
   const maxCatBytes = Math.max(10 * 1024 * 1024, ...junk.categories.map((c) => Number(c.bytes) || 0));
   listEl.innerHTML = junk.categories
@@ -3068,6 +3786,9 @@ function renderJunkCleaner(junk) {
       const checked = selectedJunkCats.has(c.id) ? 'checked' : '';
       const barW = b > 0 ? Math.min(100, Math.max(3, (b / maxCatBytes) * 100)) : 0;
       const valColor = b > 100 * 1024 * 1024 ? '#fcd34d' : b > 0 ? '#6ee7b7' : 'var(--text-muted)';
+      const localized = catKeyMap[c.id];
+      const title = localized ? t(localized.title) : c.title;
+      const sub = localized ? (c.id === 'trash' ? t(localized.sub, c.count || 0) : t(localized.sub)) : c.subtitle;
       return `
       <label class="proc-row junk-row" data-junk-id="${esc(c.id)}">
         <div class="proc-bar-bg ram-bar" style="width: ${barW.toFixed(1)}%"></div>
@@ -3075,8 +3796,8 @@ function renderJunkCleaner(junk) {
           <input type="checkbox" class="junk-check" data-junk-check="${esc(c.id)}" ${checked} />
           <span class="proc-icon-fallback">${junkCatIcon(c.id)}</span>
           <div class="junk-text-wrap">
-            <span class="proc-name">${esc(c.title)}</span>
-            <span class="junk-sub" title="${esc(c.subtitle)}">${esc(c.subtitle)}</span>
+            <span class="proc-name">${esc(title)}</span>
+            <span class="junk-sub" title="${esc(sub)}">${esc(sub)}</span>
           </div>
         </div>
         <div class="proc-right">
@@ -3092,9 +3813,7 @@ function applyCaffeinateUI(active) {
   if (!btn) return;
   const isOn = Boolean(active);
   btn.classList.toggle('active', isOn);
-  btn.title = isOn
-    ? 'Tryb Caffeinate: AKTYWNY (Mac i ekran nie zasną — kliknij, aby wyłączyć)'
-    : 'Tryb Caffeinate: blokuj usypianie ekranu i Maca (Wył.)';
+  btn.title = isOn ? t('caffeinateOnTitle') : t('caffeinateOffTitle');
 }
 
 function btKindIcon(kind) {
@@ -3292,6 +4011,7 @@ function setActiveTab(target, sub = null) {
 
 function renderTelemetry(snap) {
   if (!snap) return;
+  latestTelemetrySnap = snap;
   $('liveDot').classList.add('ok');
 
   const { cpu, memory, network, wifi, gpu, temps, battery, disk, dev, bluetooth } = snap;
@@ -3328,7 +4048,7 @@ function renderTelemetry(snap) {
   const wifiPct = Math.round(wifi?.qualityPercent || 0);
   setRing($('ringWifi'), wifiPct);
   $('hudWifiPct').textContent = `${wifiPct}%`;
-  $('hudWifiDbm').textContent = wifi?.rssi ? `${wifi.rssi}dBm` : 'Brak';
+  $('hudWifiDbm').textContent = wifi?.rssi ? `${wifi.rssi}dBm` : t('wifiNone');
 
   // 1b. Mini HUD 4 Gauges (macOS Battery + Bluetooth Widget Mode)
   const ringBatt0 = $('ringBatt0');
@@ -3352,7 +4072,7 @@ function renderTelemetry(snap) {
     if (devItem) {
       const p = Math.max(0, Math.min(100, Number(devItem.percent) || 0));
       slotEl.classList.remove('empty-slot');
-      slotEl.title = `${devItem.name}: ${p}%${devItem.charging ? ' (Ładowanie)' : ''}`;
+      slotEl.title = `${devItem.name}: ${p}%${devItem.charging ? ` (${t('btCharging')})` : ''}`;
       setRing(ringEl, p);
       ringEl.setAttribute('class', ringStrokeClassForBattery(p, devItem.charging));
       iconEl.textContent = btKindIcon(devItem.kind);
@@ -3360,7 +4080,7 @@ function renderTelemetry(snap) {
       labelEl.textContent = shortBtName(devItem);
     } else {
       slotEl.classList.add('empty-slot');
-      slotEl.title = 'Brak kolejnego urządzenia Bluetooth z raportowaniem baterii';
+      slotEl.title = t('hudBtEmpty');
       setRing(ringEl, 0);
       ringEl.setAttribute('class', 'ring-fg stroke-emerald');
       iconEl.textContent = '';
@@ -3376,7 +4096,7 @@ function renderTelemetry(snap) {
     $('hudDiskName').textContent = rawDiskName.length > 10 ? 'Dysk SSD' : rawDiskName;
   }
   if ($('hudDiskCap')) {
-    $('hudDiskCap').textContent = `Wolne: ${fmtGB(disk?.free || 0, 1).replace(' GB', '')} / ${fmtGB(disk?.total || 0, 0)} (${diskPct.toFixed(0)}%)`;
+    $('hudDiskCap').textContent = `${t('hudFree')}: ${fmtGB(disk?.free || 0, 1).replace(' GB', '')} / ${fmtGB(disk?.total || 0, 0)} (${diskPct.toFixed(0)}%)`;
   }
   if ($('hudDiskBarFill')) {
     $('hudDiskBarFill').style.width = `${diskPct.toFixed(1)}%`;
@@ -3405,19 +4125,19 @@ function renderTelemetry(snap) {
       dockerBadge.className = 'card-pill good';
     } else {
       const devPortCount = portsList.filter((p) => p.isDevPort).length;
-      dockerBadge.textContent = devPortCount > 0 ? `Dev: ${devPortCount} aktywne` : 'Docker: Wył.';
+      dockerBadge.textContent = devPortCount > 0 ? `Dev: ${devPortCount} ${t('dockerOn').toLowerCase()}` : `Docker: ${t('dockerOff')}`;
       dockerBadge.className = devPortCount > 0 ? 'card-pill good' : 'card-pill';
     }
   }
   if ($('portsCountLabel')) {
-    $('portsCountLabel').textContent = `Nasłuchujące porty TCP (${portsList.length})`;
+    $('portsCountLabel').textContent = t('portsHeaderLabel', portsList.length);
   }
   if ($('procsPortsCount')) {
     $('procsPortsCount').textContent = portsList.length;
   }
   if ($('portsList')) {
     if (portsList.length === 0) {
-      $('portsList').innerHTML = `<div class="port-empty">Brak aktywnych nasłuchujących portów TCP</div>`;
+      $('portsList').innerHTML = `<div class="port-empty">${esc(t('portsEmpty'))}</div>`;
     } else {
       $('portsList').innerHTML = portsList
         .map((pt) => {
@@ -3433,7 +4153,7 @@ function renderTelemetry(snap) {
             <div class="proc-right">
               <span class="proc-sub">${esc(pt.address)}</span>
               <span class="proc-sub">${esc(fmtBytes(pt.memBytes, 0))}</span>
-              <button class="proc-kill-btn" type="button" data-kill-pid="${esc(pt.pid)}" data-kill-name="${esc(pt.name)} (:${esc(pt.port)})" title="Zwolnij port :${esc(pt.port)} — zakończ ${esc(pt.name)} (PID ${esc(pt.pid)})">✕</button>
+              <button class="proc-kill-btn" type="button" data-kill-pid="${esc(pt.pid)}" data-kill-name="${esc(pt.name)} (:${esc(pt.port)})" title="${esc(t('killPortTitle', pt.name, pt.pid, pt.port))}">✕</button>
             </div>
           </div>`;
         })
@@ -3569,19 +4289,19 @@ function renderTelemetry(snap) {
   const pLevel = memory?.pressureLevel || 1;
   const pBadge = $('ramPressureBadge');
   if (pLevel >= 4) {
-    pBadge.textContent = 'Ciśnienie: Kryt.';
+    pBadge.textContent = t('ramPressureCrit');
     pBadge.className = 'card-pill crit';
   } else if (pLevel >= 2) {
-    pBadge.textContent = 'Ciśnienie: Średnie';
+    pBadge.textContent = t('ramPressureMed');
     pBadge.className = 'card-pill warn';
   } else {
-    pBadge.textContent = 'Ciśnienie: Niskie';
+    pBadge.textContent = t('ramPressureNorm');
     pBadge.className = 'card-pill good';
   }
 
   const totalMem = memory?.total || 1;
   $('ramMainVal').innerHTML = `${esc(fmtGB(memory?.used || 0, 2).replace(' GB', ''))} <small>/ ${esc(fmtGB(totalMem, 1))}</small>`;
-  $('ramFreeSub').textContent = `Wolne: ${fmtGB(memory?.free || 0, 2)} • Cache: ${fmtGB(memory?.cached || 0, 2)}`;
+  $('ramFreeSub').textContent = `${t('ramFree')}: ${fmtGB(memory?.free || 0, 2)} • ${t('ramCache')}: ${fmtGB(memory?.cached || 0, 2)}`;
   $('ramPctBadge').textContent = `${(memory?.percent || 0).toFixed(1)}%`;
   $('ramSwapBadge').textContent = `${fmtGB(memory?.swapUsed || 0, 1)} / ${fmtGB(memory?.swapTotal || 0, 1)}`;
 
@@ -3624,13 +4344,13 @@ function renderTelemetry(snap) {
   const tState = temps?.thermalState || 0;
   const tBadge = $('thermalStateBadge');
   if (tState === 0) {
-    tBadge.textContent = 'Termika: OK';
+    tBadge.textContent = t('thermalOk');
     tBadge.className = 'card-pill good';
   } else if (tState === 1) {
-    tBadge.textContent = 'Termika: Ciepło';
+    tBadge.textContent = t('thermalWarm');
     tBadge.className = 'card-pill warn';
   } else {
-    tBadge.textContent = 'Termika: Gorąco';
+    tBadge.textContent = t('thermalHot');
     tBadge.className = 'card-pill crit';
   }
 
@@ -3655,13 +4375,13 @@ function renderTelemetry(snap) {
   const bPct = battery?.percent ?? 100;
   const bBadge = $('battStateBadge');
   if (battery?.charging) {
-    bBadge.textContent = `Ładowanie ⚡ (${battery.adapterWatts || 65}W)`;
+    bBadge.textContent = t('battCharging', battery.adapterWatts || 65);
     bBadge.className = 'card-pill good';
   } else if (battery?.plugged) {
-    bBadge.textContent = 'Zasilacz 🔌';
+    bBadge.textContent = t('battAdapter');
     bBadge.className = 'card-pill good';
   } else {
-    bBadge.textContent = 'Na baterii 🔋';
+    bBadge.textContent = t('battOnBattery');
     bBadge.className = bPct <= 20 ? 'card-pill crit' : 'card-pill warn';
   }
 
@@ -3669,18 +4389,18 @@ function renderTelemetry(snap) {
   if (battery?.minutesRemaining != null && battery.minutesRemaining > 0 && battery.minutesRemaining < 1500) {
     const h = Math.floor(battery.minutesRemaining / 60);
     const m = battery.minutesRemaining % 60;
-    const suffix = battery.charging ? 'do pełnego' : 'pozostało';
+    const suffix = battery.charging ? t('battToFull') : t('battRemaining');
     $('battTimeSub').textContent = `${h > 0 ? h + 'h ' : ''}${m}m ${suffix}`;
   } else {
     $('battTimeSub').textContent = battery?.charging
-      ? 'Ładowanie ogniwa'
+      ? t('battChargingCell')
       : battery?.plugged
-      ? 'Zasilanie sieciowe'
-      : 'Praca na baterii';
+      ? t('battMainsPower')
+      : t('battDischarging');
   }
 
   $('battHealthVal').textContent = `${battery?.healthPercent || 100}% (${battery?.nominalCapacity || 0} mAh)`;
-  $('battCyclesVal').textContent = `${battery?.cycleCount || 0} cykli`;
+  $('battCyclesVal').textContent = `${battery?.cycleCount || 0} ${t('battCycles').toLowerCase()}`;
   $('battBarFill').style.width = `${Math.min(100, Math.max(0, bPct))}%`;
 
   $('battSysWatts').textContent = battery?.systemLoadWatts > 0 ? `${battery.systemLoadWatts.toFixed(1)} W` : '-- W';
@@ -3689,11 +4409,11 @@ function renderTelemetry(snap) {
     battery?.voltageV > 0 ? `${battery.voltageV.toFixed(1)}V / ${battery.amperageA.toFixed(1)}A` : '--V / --A';
 
   if ($('btDevicesCountLabel')) {
-    $('btDevicesCountLabel').textContent = `Baterie Bluetooth (${btList.length})`;
+    $('btDevicesCountLabel').textContent = t('battBtHeader', btList.length);
   }
   if ($('btDevicesList')) {
     if (btList.length === 0) {
-      $('btDevicesList').innerHTML = `<div class="port-empty">Brak połączonych akcesoriów Bluetooth z baterią</div>`;
+      $('btDevicesList').innerHTML = `<div class="port-empty">${esc(t('battBtEmpty'))}</div>`;
     } else {
       $('btDevicesList').innerHTML = btList
         .map((d) => {
@@ -3707,7 +4427,7 @@ function renderTelemetry(snap) {
               <span class="proc-name" title="${esc(d.name)}">${esc(d.name)}</span>
             </div>
             <div class="proc-right">
-              <span class="proc-sub">${d.charging ? '⚡ Ładowanie' : d.hfpShared ? 'Słuchawka BT (HFP)' : 'Połączono'}</span>
+              <span class="proc-sub">${d.charging ? t('btCharging') : d.hfpShared ? t('btHeadset') : t('btConnected')}</span>
               <span class="proc-primary" style="color: ${valColor}">${pct}%</span>
             </div>
           </div>`;
@@ -3718,11 +4438,11 @@ function renderTelemetry(snap) {
 
   // 9. Disk SSD/HDD & System Junk Cleaner Card
   $('diskName').textContent = disk?.name || 'Macintosh HD';
-  $('diskPctBadge').textContent = `${(disk?.percent || 0).toFixed(1)}% zajęte`;
-  $('diskFreeMain').innerHTML = `${esc(fmtGB(disk?.free || 0, 1).replace(' GB', ''))} <small>GB wolne</small>`;
+  $('diskPctBadge').textContent = `${(disk?.percent || 0).toFixed(1)}% ${t('diskOccupied')}`;
+  $('diskFreeMain').innerHTML = `${esc(fmtGB(disk?.free || 0, 1).replace(' GB', ''))} <small>${t('diskFreeSuffix')}</small>`;
   const purgeableBytes = Number(disk?.purgeable) || 0;
-  const purgeableTxt = purgeableBytes > 100 * 1024 * 1024 ? ` • Bufory APFS: ${fmtGB(purgeableBytes, 1)}` : '';
-  $('diskSubLine').textContent = `Zajęte: ${fmtGB(disk?.used || 0, 1)} z ${fmtGB(disk?.total || 0, 1)}${purgeableTxt}`;
+  const purgeableTxt = purgeableBytes > 100 * 1024 * 1024 ? ` • ${t('diskPurgeableBuf')}: ${fmtGB(purgeableBytes, 1)}` : '';
+  $('diskSubLine').textContent = `${t('diskOccupiedLabel')}: ${fmtGB(disk?.used || 0, 1)} ${t('hudFrom')} ${fmtGB(disk?.total || 0, 1)}${purgeableTxt}`;
   $('diskTempVal').textContent = temps?.ssd > 0 ? `${temps.ssd.toFixed(1)}°C` : '--°C';
   $('sysUptimeVal').textContent = fmtUptime(cpu?.uptime || 0);
   const usedBarPct = Math.min(100, Math.max(0, disk?.percent || 0));
@@ -3738,7 +4458,7 @@ function renderTelemetry(snap) {
       .map((v) => {
         const vPct = v.total > 0 ? Math.min(100, Math.round((v.used / v.total) * 100)) : 0;
         const icon = v.isInternal ? '💾' : '📀';
-        const kindLabel = v.isInternal ? 'Dysk systemowy' : `Dysk zewn. (${v.mountPoint})`;
+        const kindLabel = v.isInternal ? t('diskSysVolume') : t('diskExtVolume', v.mountPoint);
         return `
         <div class="proc-row">
           <div class="proc-bar-bg cpu-bar" style="width: ${vPct}%"></div>
@@ -3746,11 +4466,11 @@ function renderTelemetry(snap) {
             <span class="proc-icon-fallback">${icon}</span>
             <div class="junk-text-wrap">
               <span class="proc-name">${esc(v.name)}</span>
-              <span class="junk-sub">${esc(kindLabel)} • Zajęte: ${fmtGB(v.used, 1)} / ${fmtGB(v.total, 1)} (${vPct}%)</span>
+              <span class="junk-sub">${esc(kindLabel)} • ${t('diskOccupiedLabel')}: ${fmtGB(v.used, 1)} / ${fmtGB(v.total, 1)} (${vPct}%)</span>
             </div>
           </div>
           <div class="proc-right">
-            <span class="proc-primary" style="color: #d8b4fe">${fmtGB(v.free, 1)} wolne</span>
+            <span class="proc-primary" style="color: #d8b4fe">${fmtGB(v.free, 1)} ${t('diskFreeVolume')}</span>
           </div>
         </div>`;
       })
@@ -3781,10 +4501,10 @@ function renderTelemetry(snap) {
     applyTempEl($('homeChipTemp'), maxTemp);
   }
   if ($('homeChipTempSub')) {
-    if (maxTemp >= 80) $('homeChipTempSub').textContent = 'Wysoka temp.';
-    else if (maxTemp >= 62) $('homeChipTempSub').textContent = 'Podwyższona';
-    else if (maxTemp > 0) $('homeChipTempSub').textContent = 'W normie';
-    else $('homeChipTempSub').textContent = 'W normie';
+    if (maxTemp >= 80) $('homeChipTempSub').textContent = t('chipThermalHot');
+    else if (maxTemp >= 62) $('homeChipTempSub').textContent = t('chipThermalWarm');
+    else if (maxTemp > 0) $('homeChipTempSub').textContent = t('chipThermalOk');
+    else $('homeChipTempSub').textContent = t('chipThermalOk');
   }
 
   if ($('homeChipBatt')) {
@@ -3792,11 +4512,11 @@ function renderTelemetry(snap) {
   }
   if ($('homeChipBattSub')) {
     if (snap.battery?.charging) {
-      $('homeChipBattSub').textContent = 'Ładowanie ⚡';
+      $('homeChipBattSub').textContent = t('chipBattCharging');
     } else {
       const h = snap.battery?.healthPercent ?? 100;
       const cyc = snap.battery?.cycleCount ?? 0;
-      $('homeChipBattSub').textContent = `Kondycja ${h}% (${cyc}c)`;
+      $('homeChipBattSub').textContent = `${t('chipBattHealth')} ${h}% (${cyc}c)`;
     }
   }
 
@@ -3822,7 +4542,7 @@ function renderTelemetry(snap) {
   }
   if ($('homeDockerVal')) {
     const dkRunning = Boolean(snap.dev?.docker?.running);
-    $('homeDockerVal').textContent = dkRunning ? 'Aktywny' : 'Wył.';
+    $('homeDockerVal').textContent = dkRunning ? t('dockerOn') : t('dockerOff');
     const dkDot = $('homeDockerDot');
     if (dkDot) {
       dkDot.className = dkRunning ? 'sys-dot dot-green' : 'sys-dot';
@@ -3847,7 +4567,7 @@ async function triggerDiskUsageScan(targetPath = '') {
   });
 
   const badge = $('diskUsagePathBadge');
-  if (badge) badge.textContent = 'Skanowanie...';
+  if (badge) badge.textContent = t('diskScanning');
   const refreshBtn = $('btnScanDiskUsage');
   if (refreshBtn) refreshBtn.disabled = true;
 
@@ -3857,7 +4577,7 @@ async function triggerDiskUsageScan(targetPath = '') {
       renderDiskUsage(res);
     }
   } catch (_) {
-    if (badge) badge.textContent = 'Błąd skanowania';
+    if (badge) badge.textContent = t('diskScanError');
   } finally {
     if (refreshBtn) refreshBtn.disabled = false;
     isScanningDiskUsageUI = false;
@@ -3930,7 +4650,7 @@ if ($('btnScanJunk')) {
     const track = $('cleanerProgTrack');
     const fill = $('cleanerProgFill');
     btn.disabled = true;
-    if (status) status.textContent = 'Skanowanie katalogów Cache, Logów, Kosza i Dev...';
+    if (status) status.textContent = t('cleanerScanningProgress');
     if (track) track.hidden = false;
     if (fill) fill.style.width = '45%';
     try {
@@ -3938,11 +4658,11 @@ if ($('btnScanJunk')) {
       if (scan) {
         renderJunkCleaner(scan);
         if (status) {
-          status.textContent = `Skan zakończony: wykryto ${fmtBytes(scan.totalBytes || 0, 1)} śmieci`;
+          status.textContent = t('cleanerScanFinished', fmtBytes(scan.totalBytes || 0, 1));
         }
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas skanowania plików tymczasowych';
+      if (status) status.textContent = t('cleanerScanError');
     } finally {
       if (fill) fill.style.width = '100%';
       setTimeout(() => {
@@ -3960,12 +4680,12 @@ if ($('btnCleanJunk')) {
     const categories = Array.from(selectedJunkCats);
     if (categories.length === 0) {
       if ($('cleanerStatusText')) {
-        $('cleanerStatusText').textContent = 'Zaznacz przynajmniej jedną kategorię do wyczyszczenia!';
+        $('cleanerStatusText').textContent = t('cleanerSelectWarning');
       }
       return;
     }
     if (categories.includes('trash')) {
-      const ok = window.confirm('Opróżnienie Kosza trwale usunie wszystkie pliki z folderu ~/.Trash.\n\nCzy na pewno chcesz kontynuować?');
+      const ok = window.confirm(t('cleanerTrashConfirm'));
       if (!ok) return;
     }
     isCleaningOrScanning = true;
@@ -3974,8 +4694,8 @@ if ($('btnCleanJunk')) {
     const track = $('cleanerProgTrack');
     const fill = $('cleanerProgFill');
     btn.disabled = true;
-    btn.textContent = 'Czyszczenie...';
-    if (status) status.textContent = 'Usuwanie zaznaczonych śmieci i czyszczenie DNS...';
+    btn.textContent = t('cleanerCleaning');
+    if (status) status.textContent = t('cleanerCleaningProgress');
     if (track) track.hidden = false;
     if (fill) fill.style.width = '60%';
     try {
@@ -3988,11 +4708,11 @@ if ($('btnCleanJunk')) {
         const items = Number(res?.removedItems) || 0;
         status.textContent =
           freed > 0
-            ? `✅ Oczyszczono ${fmtBytes(freed, 1)} (${items} elementów)!`
-            : `✅ Wyczyszczono (${items} elementów + cache DNS)!`;
+            ? t('cleanerSuccess', fmtBytes(freed, 1), items)
+            : t('cleanerSuccessNoBytes', items);
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas czyszczenia wybranych kategorii';
+      if (status) status.textContent = t('cleanerError');
     } finally {
       if (fill) fill.style.width = '100%';
       setTimeout(() => {
@@ -4011,18 +4731,18 @@ if ($('btnCleanRam')) {
     const btn = $('btnCleanRam');
     const status = $('ramCleanStatus');
     btn.disabled = true;
-    btn.textContent = 'Odświeżanie...';
-    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie stanu pamięci...';
+    btn.textContent = t('ramCleanRunning');
+    if (status) status.textContent = t('ramCleanRunning');
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (status && res?.ok) {
-        status.textContent = `Odświeżono DNS! Wolny RAM: ${fmtGB(res.freeBytes || 0, 2)}`;
+        status.textContent = t('ramCleanDone', fmtGB(res.freeBytes || 0, 2));
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas odświeżania DNS';
+      if (status) status.textContent = t('ramCleanError');
     } finally {
       btn.disabled = false;
-      btn.textContent = '🧹 Odśwież RAM i DNS';
+      btn.textContent = t('ramCleanBtn');
     }
   });
 }
@@ -4053,6 +4773,13 @@ document.querySelectorAll('[data-jump]').forEach((el) => {
     }
   });
 });
+
+if ($('btnToggleLang')) {
+  $('btnToggleLang').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    setLanguage(currentLang === 'pl' ? 'en' : 'pl');
+  });
+}
 
 // Main Tab Bar listener (Variant A)
 if ($('mainTabBar')) {
@@ -4191,9 +4918,7 @@ function updateTooltipsToggleUI() {
     if (textEl) {
       textEl.textContent = tooltipsEnabled ? 'ON' : 'OFF';
     }
-    btn.title = tooltipsEnabled
-      ? 'Wskazówki (Tooltipy): ON (kliknij, aby wyłączyć)'
-      : 'Wskazówki (Tooltipy): OFF (kliknij, aby włączyć)';
+    btn.title = tooltipsEnabled ? t('tooltipsOnTitle') : t('tooltipsOffTitle');
     btn.setAttribute('aria-pressed', tooltipsEnabled ? 'true' : 'false');
   }
 
@@ -4205,9 +4930,7 @@ function updateTooltipsToggleUI() {
   if (homeBtn) {
     homeBtn.classList.toggle('active', tooltipsEnabled);
     homeBtn.classList.toggle('off', !tooltipsEnabled);
-    homeBtn.title = tooltipsEnabled
-      ? 'Wskazówki (Tooltipy): ON (kliknij, aby wyłączyć)'
-      : 'Wskazówki (Tooltipy): OFF (kliknij, aby włączyć)';
+    homeBtn.title = tooltipsEnabled ? t('tooltipsOnTitle') : t('tooltipsOffTitle');
   }
 }
 
@@ -4470,7 +5193,12 @@ function resolveTooltipInfo(target) {
   for (const entry of TOOLTIP_DICTIONARY) {
     try {
       if (entry.match(target)) {
-        return entry;
+        const loc = (currentLang === 'en' ? entry.en : entry.pl) || entry[currentLang] || entry;
+        return {
+          title: loc.title || entry.title,
+          desc: loc.desc || entry.desc,
+          hint: loc.hint !== undefined ? loc.hint : entry.hint,
+        };
       }
     } catch (_) {}
   }
@@ -4658,6 +5386,7 @@ async function boot() {
 
   tiny.api.call('setTooltipsState', { enabled: tooltipsEnabled }).catch(() => {});
 
+  setLanguage(currentLang);
   updateVisibleCards();
   try {
     const snap = await tiny.api.call('getSnapshot');
@@ -4904,10 +5633,58 @@ boot().catch((err) => {
         btnPin.click();
         await sleep(250);
         const pinned = btnPin.classList.contains('active');
-        if (!pinned || label.textContent !== 'Przypięto') throw new Error('Pin did not activate (' + label.textContent + ')');
+        if (!pinned || (label.textContent !== 'Przypięto' && label.textContent !== 'Pinned')) throw new Error('Pin did not activate (' + label.textContent + ')');
         btnPin.click();
         await sleep(250);
-        if (btnPin.classList.contains('active') || label.textContent !== 'Przypnij') throw new Error('Pin did not deactivate');
+        if (btnPin.classList.contains('active') || (label.textContent !== 'Przypnij' && label.textContent !== 'Pin')) throw new Error('Pin did not deactivate');
+      });
+
+      // --- 5b. Bilingual Language Switcher (PL / EN) ---
+      await test('Language toggle button switches whole UI between Polish and English', async () => {
+        const btnLang = document.getElementById('btnToggleLang');
+        if (!btnLang) throw new Error('Missing #btnToggleLang element');
+        
+        // Ensure starting in PL mode
+        if (typeof setLanguage === 'function') {
+          setLanguage('pl');
+          await sleep(60);
+        }
+
+        // Switch to EN
+        btnLang.click();
+        await sleep(150);
+        
+        const procsTab = document.querySelector('.nav-tab[data-tab="procs"]');
+        const cleanerTab = document.querySelector('.nav-tab[data-tab="cleaner"]');
+        if (!procsTab.textContent.includes('Processes')) {
+          throw new Error('Tab not translated to EN: ' + procsTab.textContent);
+        }
+        if (!cleanerTab.textContent.includes('Cleaner')) {
+          throw new Error('Cleaner tab text mismatch: ' + cleanerTab.textContent);
+        }
+        if (btnLang.textContent !== '🇵🇱 PL') {
+          throw new Error('btnToggleLang text should be 🇵🇱 PL in English mode, got: ' + btnLang.textContent);
+        }
+
+        // Verify window mode buttons updated to EN
+        const btnPin = document.getElementById('btnPin');
+        const pinLabel = document.getElementById('layerLabel');
+        btnPin.click();
+        await sleep(100);
+        if (pinLabel.textContent !== 'Pinned') throw new Error('Pin active label should be Pinned in EN mode, got: ' + pinLabel.textContent);
+        btnPin.click();
+        await sleep(100);
+        if (pinLabel.textContent !== 'Pin') throw new Error('Pin inactive label should be Pin in EN mode, got: ' + pinLabel.textContent);
+
+        // Switch back to PL
+        btnLang.click();
+        await sleep(150);
+        if (!procsTab.textContent.includes('Procesy')) {
+          throw new Error('Tab not translated back to PL: ' + procsTab.textContent);
+        }
+        if (btnLang.textContent !== '🇬🇧 EN') {
+          throw new Error('btnToggleLang text should be 🇬🇧 EN in Polish mode, got: ' + btnLang.textContent);
+        }
       });
 
       // --- 6. Compact / Expand Button ---
