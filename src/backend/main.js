@@ -17,6 +17,7 @@ const iconCache = new Map();
 let caffeinateProc = null;
 let caffeinateActive = false;
 let caffeinatePid = 0;
+let latestTelemetrySnapshot = null;
 let latestJunkScan = null;
 let lastJunkScanAt = 0;
 let isScanningJunk = false;
@@ -199,7 +200,7 @@ async function resolveMissingIcons(paths, app) {
   for (const p of paths) {
     if (p && !iconCache.has(p) && !seen.has(p)) {
       const std = String(p).replace(/\\/g, '/');
-      if (!std.startsWith('/Applications/') && !std.startsWith('/System/') && std !== '/Applications' && std !== '/System') {
+      if (std.includes('\0') || std.split('/').includes('..') || (!std.startsWith('/Applications/') && !std.startsWith('/System/') && std !== '/Applications' && std !== '/System')) {
         iconCache.set(p, null);
         continue;
       }
@@ -603,7 +604,7 @@ async function collectTelemetry(app) {
     runJunkScanOnce(app).catch(() => {});
   }
 
-  return {
+  const snapshot = {
     timestamp: now,
     host: tjs.hostName || 'Mac',
     user: tjs.system.userInfo?.userName || 'user',
@@ -623,6 +624,8 @@ async function collectTelemetry(app) {
     diskUsage: latestDiskUsage,
     dev,
   };
+  latestTelemetrySnapshot = snapshot;
+  return snapshot;
 }
 
 function canSendAlert(key, cooldownMs = 300_000) {
@@ -789,8 +792,12 @@ export const api = {
   async setLanguage({ lang } = {}, app) {
     appLang = lang === 'en' ? 'en' : 'pl';
     try {
-      const snap = await collectTelemetry(app);
-      updateTrayMenu(app, snap);
+      if (latestTelemetrySnapshot) {
+        updateTrayMenu(app, latestTelemetrySnapshot);
+      } else {
+        const snap = await collectTelemetry(app);
+        updateTrayMenu(app, snap);
+      }
     } catch (_) {}
     return { ok: true, lang: appLang };
   },
@@ -833,24 +840,28 @@ export const api = {
 
   async toggleCaffeinate({ value } = {}, app) {
     const target = typeof value === 'boolean' ? value : !caffeinateActive;
-    const bin = await resolveMacmonPath(app);
     if (target) {
       if (!caffeinateActive) {
         try {
           const myPid = tjs.pid || 0;
           const args = myPid > 1 ? ['-dis', '-w', String(myPid)] : ['-dis'];
-          caffeinateProc = tjs.spawn(['/usr/bin/caffeinate', ...args], {
+          const proc = tjs.spawn(['/usr/bin/caffeinate', ...args], {
             stdout: 'ignore',
             stderr: 'ignore',
           });
-          caffeinatePid = caffeinateProc.pid || 0;
+          caffeinateProc = proc;
+          caffeinatePid = proc.pid || 0;
           caffeinateActive = true;
-          if (caffeinateProc?.wait) {
-            caffeinateProc.wait().then(() => {
+          if (proc?.wait) {
+            proc.wait().then(() => {
+              if (caffeinateProc !== proc) return;
               caffeinateActive = false;
               caffeinatePid = 0;
               caffeinateProc = null;
-              try { app.push('caffeinate-state', { caffeinateActive: false }); } catch (_) {}
+              try {
+                app.push('caffeinate-state', { caffeinateActive: false });
+                app.push('caffeinate-mode', { caffeinateActive: false });
+              } catch (_) {}
             }).catch(() => {});
           }
         } catch (_) {}
@@ -862,18 +873,13 @@ export const api = {
           caffeinateProc = null;
         }
       } catch (_) {}
-      if (caffeinatePid > 1 && bin) {
-        try {
-          const p = tjs.spawn([bin, '--kill', String(caffeinatePid), '15'], {
-            stdout: 'ignore',
-            stderr: 'ignore',
-          });
-          await p.wait();
-        } catch (_) {}
-      }
       caffeinateActive = false;
       caffeinatePid = 0;
     }
+    try {
+      app.push('caffeinate-state', { caffeinateActive });
+      app.push('caffeinate-mode', { caffeinateActive });
+    } catch (_) {}
     return { caffeinateActive };
   },
 
@@ -890,6 +896,7 @@ export const api = {
     }
 
     const afterSnap = await collectTelemetry(app);
+    latestTelemetrySnapshot = afterSnap;
     app.push('telemetry', afterSnap);
     return {
       ok: true,
@@ -904,17 +911,25 @@ export const api = {
   },
 
   async scanDiskUsage({ path = '' } = {}, app) {
-    currentDiskUsagePath = path ? String(path) : '';
+    const rawPath = path ? String(path).replace(/\\/g, '/') : '';
+    if (rawPath.includes('\0') || rawPath.split('/').includes('..')) {
+      return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
+    }
+    currentDiskUsagePath = rawPath;
     const scan = await runDiskUsageScanOnce(app, currentDiskUsagePath, true);
     return scan || { ok: false, topDirs: [], topFiles: [] };
   },
 
   async revealInFinder({ path = '' } = {}, app) {
-    if (!path) return { ok: false };
+    if (!path) return { ok: false, error: 'EMPTY_PATH' };
+    const std = String(path).replace(/\\/g, '/');
+    if (std.includes('\0') || std.split('/').includes('..') || (!std.startsWith('/') && !std.startsWith('~'))) {
+      return { ok: false, error: 'INVALID_PATH' };
+    }
     const bin = await resolveMacmonPath(app);
-    if (!bin) return { ok: false };
+    if (!bin) return { ok: false, error: 'NO_MACMON' };
     try {
-      const proc = tjs.spawn([bin, '--reveal', String(path)], {
+      const proc = tjs.spawn([bin, '--reveal', std], {
         stdout: 'pipe',
         stderr: 'ignore',
       });
@@ -922,14 +937,14 @@ export const api = {
       await proc.wait();
       return text ? JSON.parse(text) : { ok: true };
     } catch (_) {
-      return { ok: false };
+      return { ok: false, error: 'SPAWN_FAILED' };
     }
   },
 
   async cleanSystemJunk({ categories } = {}, app) {
     const bin = await resolveMacmonPath(app);
     if (!bin) {
-      return { ok: false, error: 'Brak binarki macmon' };
+      return { ok: false, error: 'NO_MACMON' };
     }
     const cats = Array.isArray(categories) && categories.length > 0
       ? categories.map((c) => String(c))
@@ -947,6 +962,7 @@ export const api = {
         lastJunkScanAt = Date.now();
       }
       const afterSnap = await collectTelemetry(app);
+      latestTelemetrySnapshot = afterSnap;
       app.push('telemetry', afterSnap);
       return parsed;
     } catch (err) {
@@ -957,11 +973,11 @@ export const api = {
   async killProcess({ pid, force = false, name = '' } = {}, app) {
     const targetPid = Number(pid) || 0;
     if (targetPid <= 1) {
-      return { ok: false, error: 'Nieprawidłowy PID' };
+      return { ok: false, error: 'INVALID_PID' };
     }
     const bin = await resolveMacmonPath(app);
     if (!bin) {
-      return { ok: false, error: 'Brak binarki macmon' };
+      return { ok: false, error: 'NO_MACMON' };
     }
     try {
       const sig = force ? '9' : '15';
@@ -976,6 +992,7 @@ export const api = {
       setTimeout(async () => {
         try {
           const snap = await collectTelemetry(app);
+          latestTelemetrySnapshot = snap;
           app.push('telemetry', snap);
         } catch (_) {}
       }, 180);
@@ -991,7 +1008,7 @@ export const api = {
     }
     isSpeedtesting = true;
     try {
-      app.push('speedtest-progress', { phase: 'ping', progress: 10, message: 'Pomiar opóźnienia HTTP (Ping)...' });
+      app.push('speedtest-progress', { phase: 'ping', progress: 10 });
       const tPing0 = Date.now();
       await fetch('https://speed.cloudflare.com/__down?bytes=0', { cache: 'no-store' });
       const latencyMs = Math.max(1, Date.now() - tPing0);
@@ -1000,7 +1017,6 @@ export const api = {
         phase: 'download',
         progress: 25,
         latencyMs,
-        message: 'Pobieranie próbki testowej (15 MB)...',
       });
 
       const targetBytes = 15_000_000;
@@ -1031,7 +1047,6 @@ export const api = {
               progress: pct,
               downloadMbps: currentMbps,
               latencyMs,
-              message: `Pomiar pobierania: ${currentMbps.toFixed(1)} Mbps...`,
             });
             lastPush = now;
           }
@@ -1054,7 +1069,6 @@ export const api = {
         phase: 'done',
         progress: 100,
         ...result,
-        message: `Wynik: ${finalMbps.toFixed(1)} Mbps (${finalMBps.toFixed(1)} MB/s) • Ping ${latencyMs} ms`,
       });
       return result;
     } catch (err) {
@@ -1062,7 +1076,7 @@ export const api = {
       app.push('speedtest-progress', {
         phase: 'error',
         progress: 0,
-        message: 'Błąd testu prędkości: ' + msg,
+        error: msg,
       });
       return { ok: false, error: msg };
     } finally {

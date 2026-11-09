@@ -202,6 +202,21 @@ async function runBackendApiTest() {
   const resTipOn = await mainMod.api.setTooltipsState({ enabled: true }, mockApp);
   assert(resTipOn?.tooltipsEnabled === true, 'setTooltipsState enabled tooltips');
 
+  // Verify Security & Path Traversal Guards
+  const resBadDisk = await mainMod.api.scanDiskUsage({ path: '/Applications/../Users' }, mockApp);
+  assert(resBadDisk?.ok === false && resBadDisk?.error === 'INVALID_PATH', 'scanDiskUsage rejects path traversal attempts');
+
+  const resBadReveal = await mainMod.api.revealInFinder({ path: '../../etc/passwd' }, mockApp);
+  assert(resBadReveal?.ok === false && resBadReveal?.error === 'INVALID_PATH', 'revealInFinder rejects path traversal attempts');
+
+  const resBadKill = await mainMod.api.killProcess({ pid: 1 }, mockApp);
+  assert(resBadKill?.ok === false && resBadKill?.error === 'INVALID_PID', 'killProcess safely rejects PID <= 1');
+
+  // Verify setLanguage optimization with cached snapshot
+  const resLang = await mainMod.api.setLanguage({ lang: 'en' }, mockApp);
+  assert(resLang?.ok === true && resLang?.lang === 'en', 'setLanguage switches language without error');
+  await mainMod.api.setLanguage({ lang: 'pl' }, mockApp);
+
   // Verify Native macmon Privacy Filtering for Icons
   const iconProc = tjs.spawn([(tjs.cwd || '.') + '/executables/macmon', '--icons', '/Applications/Safari.app', '/Users/test/Desktop/app'], { stdout: 'pipe', stderr: 'ignore' });
   const iconOut = await iconProc.stdout.text();

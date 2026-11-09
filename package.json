@@ -8,7 +8,7 @@
     "start": "tinyjs dev",
     "dev": "tinyjs dev",
     "build": "tinyjs build",
-    "build:native": "clang -O3 -fobjc-arc -framework Cocoa -framework IOKit -framework CoreWLAN src/native/macmon.m -o executables/macmon",
+    "build:native": "clang -O3 -fobjc-arc -arch arm64 -arch x86_64 -framework Cocoa -framework IOKit -framework CoreWLAN src/native/macmon.m -o executables/macmon",
     "test": "./test/run-e2e.sh",
     "test:ui": "./test/run-e2e.sh --ui"
   },

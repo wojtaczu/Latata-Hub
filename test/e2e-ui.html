@@ -3002,6 +3002,10 @@ const I18N = {
     speedtestReady: 'Speedtest Cloudflare gotowy',
     speedtestBtn: 'Testuj łącze',
     speedtestRunning: 'Test...',
+    speedtestMeasuringPing: 'Pomiar opóźnienia HTTP (Ping)...',
+    speedtestDownloading: (mbps) => `Pobieranie próbki testowej: ${mbps} Mbps...`,
+    speedtestDoneResult: (mbps, mBps, lat) => `Wynik: ${mbps} Mbps (${mBps} MB/s) • Ping ${lat} ms`,
+    speedtestError: (err) => `Błąd testu prędkości: ${err}`,
 
     wifiTitle: 'Siła sygnału Wi-Fi',
     wifiQuality: 'Jakość',
@@ -3223,6 +3227,10 @@ const I18N = {
     speedtestReady: 'Cloudflare Speedtest ready',
     speedtestBtn: 'Run Speedtest',
     speedtestRunning: 'Testing...',
+    speedtestMeasuringPing: 'Measuring HTTP latency (Ping)...',
+    speedtestDownloading: (mbps) => `Downloading test sample: ${mbps} Mbps...`,
+    speedtestDoneResult: (mbps, mBps, lat) => `Result: ${mbps} Mbps (${mBps} MB/s) • Ping ${lat} ms`,
+    speedtestError: (err) => `Speedtest error: ${err}`,
 
     wifiTitle: 'Wi-Fi Signal Strength',
     wifiQuality: 'Quality',
@@ -3575,7 +3583,7 @@ function applyWindowModeUI(desktopWidgetMode, compactMode) {
 let currentFilter = 'dashboard';
 let procsSub = 'top-cpu';
 const recentlyKilledPids = new Map();
-const selectedJunkCats = new Set(['caches', 'dev', 'logs', 'trash', 'temp']);
+const selectedJunkCats = new Set(['caches', 'dev', 'logs']);
 let latestJunkData = null;
 let isCleaningOrScanning = false;
 let latestDiskUsageData = null;
@@ -4857,9 +4865,7 @@ $('cardsContainer').addEventListener('click', async (ev) => {
   if (!pid || pid <= 1) return;
   const procName = btn.dataset.killName || '';
 
-  const prevAttempt = recentlyKilledPids.get(pid) || 0;
-  const force = Boolean(ev.altKey || ev.shiftKey || (Date.now() - prevAttempt < 5000));
-  recentlyKilledPids.set(pid, Date.now());
+  const force = Boolean(ev.altKey || ev.shiftKey);
 
   const row = btn.closest('.proc-row');
   if (row) {
@@ -4875,20 +4881,37 @@ $('cardsContainer').addEventListener('click', async (ev) => {
 $('btnSpeedtest').addEventListener('click', async () => {
   const btn = $('btnSpeedtest');
   btn.disabled = true;
-  btn.textContent = 'Test...';
+  btn.textContent = t('speedtestRunning');
   $('speedtestTrack').hidden = false;
   $('speedtestFill').style.width = '5%';
   try {
     await tiny.api.call('runSpeedtest');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Testuj łącze';
+    btn.textContent = t('speedtestBtn');
   }
 });
 
 tiny.api.on('speedtest-progress', (info) => {
   if (!info) return;
-  $('speedtestStatus').textContent = info.message || '';
+  const statusEl = $('speedtestStatus');
+  if (statusEl) {
+    if (info.phase === 'ping') {
+      statusEl.textContent = t('speedtestMeasuringPing');
+    } else if (info.phase === 'download') {
+      const mbps = typeof info.downloadMbps === 'number' ? info.downloadMbps.toFixed(1) : '...';
+      statusEl.textContent = t('speedtestDownloading', mbps);
+    } else if (info.phase === 'done') {
+      const mbps = (Number(info.downloadMbps) || 0).toFixed(1);
+      const mBps = (Number(info.downloadMBps) || 0).toFixed(1);
+      const lat = info.latencyMs || 0;
+      statusEl.textContent = t('speedtestDoneResult', mbps, mBps, lat);
+    } else if (info.phase === 'error') {
+      statusEl.textContent = t('speedtestError', info.error || 'HTTP Error');
+    } else if (info.message) {
+      statusEl.textContent = info.message;
+    }
+  }
   if (info.phase === 'done' || info.phase === 'error') {
     $('speedtestFill').style.width = info.phase === 'done' ? '100%' : '0%';
   } else {
@@ -5628,6 +5651,10 @@ async function boot() {
   });
 
   tiny.api.on('caffeinate-mode', ({ caffeinateActive }) => {
+    applyCaffeinateUI(caffeinateActive);
+  });
+
+  tiny.api.on('caffeinate-state', ({ caffeinateActive }) => {
     applyCaffeinateUI(caffeinateActive);
   });
 

@@ -703,6 +703,15 @@ int main(int argc, const char * argv[]) {
                 [task launch];
                 [task waitUntilExit];
             } @catch (id _) {}
+
+            NSTask *taskMdns = [[NSTask alloc] init];
+            taskMdns.launchPath = @"/usr/bin/killall";
+            taskMdns.arguments = @[@"-HUP", @"mDNSResponder"];
+            @try {
+                [taskMdns launch];
+                [taskMdns waitUntilExit];
+            } @catch (id _) {}
+
             NSDictionary *res = @{@"ok": @(YES)};
             NSData *d = [NSJSONSerialization dataWithJSONObject:res options:0 error:nil];
             if (d) {
