@@ -5,6 +5,10 @@
 
 ---
 
+**English** • [🇵🇱 Polska wersja językowa (README.pl.md)](README.pl.md)
+
+---
+
 ## ✨ Features
 
 - **Circular Status Rings**: Real-time Apple-style circular gauges for CPU, RAM, GPU, and Wi-Fi signal.
