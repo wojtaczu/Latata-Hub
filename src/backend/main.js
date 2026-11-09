@@ -276,25 +276,30 @@ async function measurePingOnce() {
 
 function computeWifiQuality(rssi, noise) {
   if (typeof rssi !== 'number' || rssi === 0 || rssi < -110) {
-    return { qualityPercent: 0, bars: 0, label: 'Brak sygnału' };
+    return { qualityPercent: 0, bars: 0, qualityCode: 'none', label: 'Brak sygnału' };
   }
   const qualityPercent = Math.max(0, Math.min(100, Math.round(2 * (rssi + 100))));
   let bars = 1;
   let label = 'Słaba';
+  let qualityCode = 'poor';
   if (rssi >= -55) {
     bars = 5;
     label = 'Doskonała';
+    qualityCode = 'excellent';
   } else if (rssi >= -65) {
     bars = 4;
     label = 'Bardzo dobra';
+    qualityCode = 'very_good';
   } else if (rssi >= -72) {
     bars = 3;
     label = 'Dobra';
+    qualityCode = 'good';
   } else if (rssi >= -80) {
     bars = 2;
     label = 'Średnia';
+    qualityCode = 'fair';
   }
-  return { qualityPercent, bars, label };
+  return { qualityPercent, bars, qualityCode, label };
 }
 
 async function collectTelemetry(app) {
@@ -481,7 +486,7 @@ async function collectTelemetry(app) {
   const txRate = typeof sysWifi?.txRate === 'number' && sysWifi.txRate > 0 ? sysWifi.txRate : (wExtra.txRate ?? 0);
   const ssid = sysWifi?.ssid || wExtra.ssid || null;
   const snr = rssi !== 0 ? rssi - noise : 0;
-  const { qualityPercent, bars, label } = computeWifiQuality(rssi, noise);
+  const { qualityPercent, bars, qualityCode, label } = computeWifiQuality(rssi, noise);
 
   const wifi = {
     ssid,
@@ -497,6 +502,7 @@ async function collectTelemetry(app) {
     powerOn: wExtra.powerOn !== false,
     qualityPercent,
     bars,
+    qualityCode,
     label,
   };
 

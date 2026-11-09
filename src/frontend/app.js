@@ -284,6 +284,14 @@ const I18N = {
 
     wifiTitle: 'Siła sygnału Wi-Fi',
     wifiQuality: 'Jakość',
+    wifiQuality_none: 'Brak sygnału',
+    wifiQuality_excellent: 'Doskonała',
+    wifiQuality_very_good: 'Bardzo dobra',
+    wifiQuality_good: 'Dobra',
+    wifiQuality_fair: 'Średnia',
+    wifiQuality_poor: 'Słaba',
+    wifiInterface: 'Interfejs',
+    killFailed: 'Błąd zakończenia procesu',
     wifiBand: 'Pasmo',
     wifiChannel: 'Kanał',
     wifiSignal: 'Sygnał (RSSI)',
@@ -362,6 +370,10 @@ const I18N = {
     cleanerScanFinished: (b) => `Skan zakończony: wykryto ${b} śmieci`,
     cleanerScanError: 'Błąd podczas skanowania plików tymczasowych',
     cleanerSelectWarning: 'Zaznacz przynajmniej jedną kategorię do wyczyszczenia!',
+    cleanerConfirmBtn: '⚠️ Potwierdź usunięcie',
+    cleanerConfirmBoth: 'Wybrano opróżnienie Kosza i pliki tymczasowe. Kliknij ponownie, aby potwierdzić.',
+    cleanerConfirmTrash: 'Wybrano opróżnienie Kosza! Kliknij ponownie, aby potwierdzić.',
+    cleanerConfirmTemp: 'Wybrano pliki tymczasowe (/tmp). Kliknij ponownie, aby potwierdzić.',
     cleanerTrashConfirm: 'Opróżnienie Kosza trwale usunie wszystkie pliki z folderu ~/.Trash.\n\nCzy na pewno chcesz kontynuować?',
     cleanerCleaning: 'Czyszczenie...',
     cleanerCleaningProgress: 'Usuwanie zaznaczonych śmieci i czyszczenie DNS...',
@@ -509,6 +521,14 @@ const I18N = {
 
     wifiTitle: 'Wi-Fi Signal Strength',
     wifiQuality: 'Quality',
+    wifiQuality_none: 'No Signal',
+    wifiQuality_excellent: 'Excellent',
+    wifiQuality_very_good: 'Very Good',
+    wifiQuality_good: 'Good',
+    wifiQuality_fair: 'Fair',
+    wifiQuality_poor: 'Poor',
+    wifiInterface: 'Interface',
+    killFailed: 'Failed to terminate process',
     wifiBand: 'Band',
     wifiChannel: 'Channel',
     wifiSignal: 'Signal (RSSI)',
@@ -587,6 +607,10 @@ const I18N = {
     cleanerScanFinished: (b) => `Scan completed: found ${b} junk`,
     cleanerScanError: 'Error scanning temporary files',
     cleanerSelectWarning: 'Select at least one category to clean!',
+    cleanerConfirmBtn: '⚠️ Confirm Deletion',
+    cleanerConfirmBoth: 'Trash and temporary files selected. Click again to confirm deletion.',
+    cleanerConfirmTrash: 'Empty Trash selected! Click again to confirm permanent deletion.',
+    cleanerConfirmTemp: 'Temporary files (/tmp) selected. Click again to confirm.',
     cleanerTrashConfirm: 'Emptying the Trash permanently deletes all files in ~/.Trash.\n\nAre you sure you want to proceed?',
     cleanerCleaning: 'Cleaning...',
     cleanerCleaningProgress: 'Removing selected junk files & flushing DNS...',
@@ -859,6 +883,8 @@ let currentFilter = 'dashboard';
 let procsSub = 'top-cpu';
 const recentlyKilledPids = new Map();
 const selectedJunkCats = new Set(['caches', 'dev', 'logs']);
+let pendingCleanConfirm = false;
+let cleanConfirmTimer = null;
 let latestJunkData = null;
 let isCleaningOrScanning = false;
 let latestDiskUsageData = null;
@@ -1299,9 +1325,6 @@ function renderTelemetry(snap) {
 
   const { cpu, memory, network, wifi, gpu, temps, battery, disk, dev, bluetooth } = snap;
 
-  if (cpu?.model && $('headerChip')) {
-    $('headerChip').textContent = cpu.model.replace('Apple ', '');
-  }
   applyWindowModeUI(snap.desktopWidgetMode, snap.compactMode);
   if (typeof snap.caffeinateActive === 'boolean') {
     applyCaffeinateUI(snap.caffeinateActive);
@@ -1476,8 +1499,9 @@ function renderTelemetry(snap) {
   );
 
   // 4. Wi-Fi Card
+  const qualityLabel = (wifi?.qualityCode && t('wifiQuality_' + wifi.qualityCode)) || wifi?.label || '—';
   const qBadge = $('wifiQualityBadge');
-  qBadge.textContent = wifi?.ssid ? `${wifi.ssid} • ${wifi.label}` : `Jakość: ${wifi?.label || '—'}`;
+  qBadge.textContent = wifi?.ssid ? `${wifi.ssid} • ${qualityLabel}` : `${t('wifiQuality')}: ${qualityLabel}`;
   qBadge.className = `card-pill ${wifiPct >= 70 ? 'good' : wifiPct >= 40 ? 'warn' : 'crit'}`;
 
   const barsEl = $('wifiBars');
@@ -1492,9 +1516,9 @@ function renderTelemetry(snap) {
   $('wifiDbmVal').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
   const bandInfo = [];
   if (wifi?.band && wifi.band !== '—') bandInfo.push(wifi.band);
-  if (wifi?.channel) bandInfo.push(`Kanał ${wifi.channel}`);
+  if (wifi?.channel) bandInfo.push(`${t('wifiChannel')} ${wifi.channel}`);
   if (wifi?.widthMHz) bandInfo.push(`${wifi.widthMHz} MHz`);
-  $('wifiBandLine').textContent = bandInfo.length > 0 ? bandInfo.join(' • ') : `Interfejs ${wifi?.interface || 'en0'}`;
+  $('wifiBandLine').textContent = bandInfo.length > 0 ? bandInfo.join(' • ') : `${t('wifiInterface')} ${wifi?.interface || 'en0'}`;
   $('wifiTxRate').textContent = wifi?.txRate ? Math.round(wifi.txRate) : 0;
   $('wifiRssi').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
   $('wifiNoise').textContent = wifi?.noise ? `${wifi.noise} dBm` : '-- dBm';
@@ -1561,7 +1585,7 @@ function renderTelemetry(snap) {
           <div class="proc-right">
             <span class="proc-sub">${esc(fmtBytes(p.memBytes, 0))}</span>
             <span class="proc-primary cpu-val">${esc(Number(p.cpuPercent || 0).toFixed(1))}%</span>
-            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="Zakończ proces ${esc(p.name)} (PID ${esc(p.pid)}) • Kliknij z ⌥ Option aby wymusić (kill -9)">✕</button>
+            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="${esc(t('killProcTitle', p.name, p.pid))}">✕</button>
           </div>
         </div>`;
       })
@@ -1616,7 +1640,7 @@ function renderTelemetry(snap) {
           <div class="proc-right">
             <span class="proc-sub">${esc(Number(p.memPercent || 0).toFixed(1))}%</span>
             <span class="proc-primary ram-val">${esc(fmtBytes(p.memBytes, 1))}</span>
-            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="Zakończ proces ${esc(p.name)} (PID ${esc(p.pid)}) • Kliknij z ⌥ Option aby wymusić (kill -9)">✕</button>
+            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="${esc(t('killProcTitle', p.name, p.pid))}">✕</button>
           </div>
         </div>`;
       })
@@ -1920,6 +1944,15 @@ if ($('junkCategoriesList')) {
     const catId = chk.dataset.junkCheck;
     if (chk.checked) selectedJunkCats.add(catId);
     else selectedJunkCats.delete(catId);
+    if (pendingCleanConfirm) {
+      pendingCleanConfirm = false;
+      if (cleanConfirmTimer) clearTimeout(cleanConfirmTimer);
+      const btn = $('btnCleanJunk');
+      if (btn) {
+        btn.style.borderColor = '';
+        btn.style.boxShadow = '';
+      }
+    }
     if (latestJunkData) renderJunkCleaner(latestJunkData);
   });
 }
@@ -1967,10 +2000,38 @@ if ($('btnCleanJunk')) {
       }
       return;
     }
-    if (categories.includes('trash')) {
-      const ok = window.confirm(t('cleanerTrashConfirm'));
-      if (!ok) return;
+
+    const hasSensitive = categories.includes('trash') || categories.includes('temp');
+    if (hasSensitive && !pendingCleanConfirm) {
+      pendingCleanConfirm = true;
+      const btn = $('btnCleanJunk');
+      const status = $('cleanerStatusText');
+      btn.textContent = t('cleanerConfirmBtn');
+      btn.style.borderColor = '#f59e0b';
+      btn.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.4)';
+      if (status) {
+        status.textContent =
+          categories.includes('trash') && categories.includes('temp')
+            ? t('cleanerConfirmBoth')
+            : categories.includes('trash')
+            ? t('cleanerConfirmTrash')
+            : t('cleanerConfirmTemp');
+      }
+      if (cleanConfirmTimer) clearTimeout(cleanConfirmTimer);
+      cleanConfirmTimer = setTimeout(() => {
+        pendingCleanConfirm = false;
+        btn.style.borderColor = '';
+        btn.style.boxShadow = '';
+        if (latestJunkData) renderJunkCleaner(latestJunkData);
+      }, 5000);
+      return;
     }
+
+    pendingCleanConfirm = false;
+    if (cleanConfirmTimer) clearTimeout(cleanConfirmTimer);
+    const btn = $('btnCleanJunk');
+    btn.style.borderColor = '';
+    btn.style.boxShadow = '';
     isCleaningOrScanning = true;
     const btn = $('btnCleanJunk');
     const status = $('cleanerStatusText');
@@ -2092,18 +2153,18 @@ if ($('btnHomeCleanRam')) {
     const btn = $('btnHomeCleanRam');
     const label = $('homeCleanRamLabel');
     btn.disabled = true;
-    if (label) label.textContent = 'Odświeżanie...';
+    if (label) label.textContent = t('ramCleanRunning');
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (label) {
-        label.textContent = res?.ok ? '✅ Odświeżono pamięć i DNS!' : 'Odświeżono';
+        label.textContent = res?.ok ? t('ramCleanDone', fmtGB(res.freeBytes || 0, 2)) : t('homeCleanRamBtn');
       }
     } catch (_) {
-      if (label) label.textContent = 'Błąd odświeżania';
+      if (label) label.textContent = t('ramCleanError');
     } finally {
       setTimeout(() => {
         btn.disabled = false;
-        if (label) label.textContent = 'Odśwież RAM i DNS';
+        if (label) label.textContent = t('homeCleanRamBtn');
       }, 2000);
     }
   });
@@ -2115,18 +2176,18 @@ if ($('btnCleanRamAlt')) {
     const btn = $('btnCleanRamAlt');
     const status = $('cleanerDnsStatus');
     btn.disabled = true;
-    btn.textContent = 'Odświeżanie...';
-    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie pamięci...';
+    btn.textContent = t('ramCleanRunning');
+    if (status) status.textContent = t('ramCleanRunning');
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (status && res?.ok) {
-        status.textContent = `Odświeżono DNS! Wolny RAM: ${fmtGB(res.freeBytes || 0, 2)}`;
+        status.textContent = t('ramCleanDone', fmtGB(res.freeBytes || 0, 2));
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas odświeżania DNS';
+      if (status) status.textContent = t('ramCleanError');
     } finally {
       btn.disabled = false;
-      btn.textContent = '🧹 Odśwież RAM i DNS';
+      btn.textContent = t('ramCleanBtn');
     }
   });
 }
@@ -2140,7 +2201,7 @@ $('cardsContainer').addEventListener('click', async (ev) => {
   if (!pid || pid <= 1) return;
   const procName = btn.dataset.killName || '';
 
-  const force = Boolean(ev.altKey || ev.shiftKey);
+  const force = Boolean(ev.altKey);
 
   const row = btn.closest('.proc-row');
   if (row) {
@@ -2148,8 +2209,22 @@ $('cardsContainer').addEventListener('click', async (ev) => {
   }
   btn.textContent = '…';
   try {
-    await tiny.api.call('killProcess', { pid, force, name: procName });
-  } catch (_) {}
+    const res = await tiny.api.call('killProcess', { pid, force, name: procName });
+    if (!res?.ok) {
+      if (row) row.style.opacity = '';
+      btn.textContent = '✕';
+      const errMsg = res?.error || 'Error';
+      btn.title = `${t('killFailed')}: ${errMsg}`;
+      btn.style.color = '#f43f5e';
+      setTimeout(() => {
+        btn.style.color = '';
+        btn.title = t('killProcTitle', procName, pid);
+      }, 3000);
+    }
+  } catch (_) {
+    if (row) row.style.opacity = '';
+    btn.textContent = '✕';
+  }
 });
 
 // Speedtest button & progress events
