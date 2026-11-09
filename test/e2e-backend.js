@@ -209,6 +209,10 @@ async function runBackendApiTest() {
   const resBadReveal = await mainMod.api.revealInFinder({ path: '../../etc/passwd' }, mockApp);
   assert(resBadReveal?.ok === false && resBadReveal?.error === 'INVALID_PATH', 'revealInFinder rejects path traversal attempts');
 
+  assert(typeof mainMod.api.openExternal === 'function', 'api.openExternal is exported function');
+  const resBadUrl = await mainMod.api.openExternal({ url: 'javascript:alert(1)' }, mockApp);
+  assert(resBadUrl?.ok === false && resBadUrl?.error === 'INVALID_URL', 'openExternal safely rejects invalid schemes');
+
   const resBadKill = await mainMod.api.killProcess({ pid: 1 }, mockApp);
   assert(resBadKill?.ok === false && resBadKill?.error === 'INVALID_PID', 'killProcess safely rejects PID <= 1');
 

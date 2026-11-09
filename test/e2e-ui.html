@@ -662,6 +662,96 @@ html, body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Creator Support & Coffee Card */
+.home-support-card {
+  margin-top: 5px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.home-support-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.home-support-heart {
+  font-size: 11px;
+}
+
+.home-support-links {
+  display: flex;
+  gap: 4px;
+}
+
+.home-support-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  font-size: 9px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.home-support-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+}
+
+.home-support-btn.paypal-btn {
+  border-color: rgba(0, 112, 186, 0.45);
+  background: rgba(0, 112, 186, 0.18);
+  color: #7dd3fc;
+}
+
+.home-support-btn.paypal-btn:hover {
+  background: rgba(0, 112, 186, 0.35);
+  border-color: rgba(56, 189, 248, 0.7);
+  color: #ffffff;
+}
+
+.home-support-btn.copy-btn {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.home-support-btn.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.home-support-btn.linkedin-btn {
+  border-color: rgba(10, 102, 194, 0.4);
+  background: rgba(10, 102, 194, 0.15);
+  color: #93c5fd;
+}
+
+.home-support-btn.linkedin-btn:hover {
+  background: rgba(10, 102, 194, 0.3);
+  border-color: rgba(96, 165, 250, 0.7);
+  color: #ffffff;
+}
+
 .cards-container::-webkit-scrollbar {
   width: 4px;
 }
@@ -2298,7 +2388,7 @@ html, body {
 
         <div class="home-actions-bar">
           <button class="home-action-btn" id="btnHomeCleanRam" type="button" title="Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM">
-            🧹 <span id="homeCleanRamLabel">Odśwież RAM i DNS</span>
+            <span id="homeCleanRamLabel">🧹 Odśwież RAM i DNS</span>
           </button>
           <button class="home-action-btn" id="btnHomeProcs" type="button" data-jump="top-cpu" title="Przejdź do pełnej listy procesów CPU i RAM">
             ⚡ Procesy
@@ -2306,6 +2396,28 @@ html, body {
           <button class="home-action-btn" id="btnHomeCleaner" type="button" data-jump="cleaner" title="Przejdź do Smart Cleanera">
             🔍 Smart Cleaner
           </button>
+        </div>
+
+        <!-- Creator Support & Coffee Card -->
+        <div class="home-support-card" id="homeSupportCard">
+          <div class="home-support-header">
+            <span class="home-support-heart">☕</span>
+            <span class="home-support-text" id="homeSupportText">Podoba Ci się Latata.Hub? Wesprzyj twórcę!</span>
+          </div>
+          <div class="home-support-links">
+            <a class="home-support-btn paypal-btn" id="btnSupportPaypal" href="https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN" target="_blank" title="Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)">
+              <span class="support-icon">🅿️</span>
+              <span id="supportPaypalLabel">PayPal</span>
+            </a>
+            <button class="home-support-btn copy-btn" id="btnCopyPaypalEmail" type="button" title="Skopiuj adres e-mail do przelewu PayPal: lataczwojciech@gmail.com">
+              <span>📋</span>
+              <span id="supportCopyLabel">Kopiuj e-mail</span>
+            </button>
+            <a class="home-support-btn linkedin-btn" id="btnSupportLinkedin" href="https://www.linkedin.com/in/wlatacz" target="_blank" title="Profil autora na LinkedIn (Wojciech Łatacz)">
+              <span class="support-icon">💼</span>
+              <span>LinkedIn</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -2961,6 +3073,13 @@ const I18N = {
     homeCleanRamTitle: 'Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM',
     homeProcsBtn: '⚡ Procesy',
     homeCleanerBtn: '🔍 Smart Cleaner',
+    supportHeader: 'Podoba Ci się Latata.Hub? Wesprzyj twórcę!',
+    supportPaypalBtn: 'PayPal',
+    supportPaypalTitle: 'Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)',
+    supportCopyEmail: 'Kopiuj e-mail',
+    supportCopyTitle: 'Skopiuj adres e-mail do przelewu PayPal (lataczwojciech@gmail.com)',
+    supportCopied: '✅ Skopiowano e-mail!',
+    supportLinkedinTitle: 'Profil autora na LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Porty Localhost & Dev',
     portsHeaderLabel: (n) => `Nasłuchujące porty TCP (${n})`,
@@ -3198,6 +3317,13 @@ const I18N = {
     homeCleanRamTitle: 'Flush DNS cache (dscacheutil) and update RAM buffers',
     homeProcsBtn: '⚡ Processes',
     homeCleanerBtn: '🔍 Smart Cleaner',
+    supportHeader: 'Enjoying Latata.Hub? Support the creator!',
+    supportPaypalBtn: 'PayPal',
+    supportPaypalTitle: 'Support the project via PayPal (lataczwojciech@gmail.com)',
+    supportCopyEmail: 'Copy email',
+    supportCopyTitle: 'Copy PayPal email address (lataczwojciech@gmail.com)',
+    supportCopied: '✅ Email copied!',
+    supportLinkedinTitle: 'Author profile on LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Localhost & Dev Ports',
     portsHeaderLabel: (n) => `Listening TCP Ports (${n})`,
@@ -3480,6 +3606,13 @@ function setLanguage(lang) {
   if (btnHomeP) btnHomeP.textContent = t('homeProcsBtn');
   const btnHomeC = $('btnHomeCleaner');
   if (btnHomeC) btnHomeC.textContent = t('homeCleanerBtn');
+
+  if ($('homeSupportText')) $('homeSupportText').textContent = t('supportHeader');
+  if ($('supportPaypalLabel')) $('supportPaypalLabel').textContent = t('supportPaypalBtn');
+  if ($('btnSupportPaypal')) $('btnSupportPaypal').title = t('supportPaypalTitle');
+  if ($('supportCopyLabel')) $('supportCopyLabel').textContent = t('supportCopyEmail');
+  if ($('btnCopyPaypalEmail')) $('btnCopyPaypalEmail').title = t('supportCopyTitle');
+  if ($('btnSupportLinkedin')) $('btnSupportLinkedin').title = t('supportLinkedinTitle');
 
   const secPortsH2 = document.querySelector('#sec-ports h2');
   if (secPortsH2) secPortsH2.textContent = t('portsTitle');
@@ -4995,6 +5128,41 @@ tiny.api.on('speedtest-progress', (info) => {
     $('speedtestFill').style.width = `${Math.min(100, Math.max(5, info.progress || 10))}%`;
   }
 });
+
+// Creator Support & Coffee handlers
+if ($('btnCopyPaypalEmail')) {
+  $('btnCopyPaypalEmail').addEventListener('click', async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText('lataczwojciech@gmail.com');
+      }
+      const label = $('supportCopyLabel');
+      if (label) {
+        const orig = label.textContent;
+        label.textContent = t('supportCopied');
+        setTimeout(() => {
+          label.textContent = orig;
+        }, 2200);
+      }
+    } catch (_) {}
+  });
+}
+
+if ($('btnSupportPaypal')) {
+  $('btnSupportPaypal').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const url = 'https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN';
+    tiny?.api?.call?.('openExternal', { url }).catch(() => {});
+  });
+}
+
+if ($('btnSupportLinkedin')) {
+  $('btnSupportLinkedin').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const url = 'https://www.linkedin.com/in/wlatacz';
+    tiny?.api?.call?.('openExternal', { url }).catch(() => {});
+  });
+}
 
 // =========================================================================
 // Modern Floating Dark-Glass Tooltip Engine (Variant A)

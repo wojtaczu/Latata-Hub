@@ -236,6 +236,13 @@ const I18N = {
     homeCleanRamTitle: 'Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM',
     homeProcsBtn: '⚡ Procesy',
     homeCleanerBtn: '🔍 Smart Cleaner',
+    supportHeader: 'Podoba Ci się Latata.Hub? Wesprzyj twórcę!',
+    supportPaypalBtn: 'PayPal',
+    supportPaypalTitle: 'Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)',
+    supportCopyEmail: 'Kopiuj e-mail',
+    supportCopyTitle: 'Skopiuj adres e-mail do przelewu PayPal (lataczwojciech@gmail.com)',
+    supportCopied: '✅ Skopiowano e-mail!',
+    supportLinkedinTitle: 'Profil autora na LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Porty Localhost & Dev',
     portsHeaderLabel: (n) => `Nasłuchujące porty TCP (${n})`,
@@ -473,6 +480,13 @@ const I18N = {
     homeCleanRamTitle: 'Flush DNS cache (dscacheutil) and update RAM buffers',
     homeProcsBtn: '⚡ Processes',
     homeCleanerBtn: '🔍 Smart Cleaner',
+    supportHeader: 'Enjoying Latata.Hub? Support the creator!',
+    supportPaypalBtn: 'PayPal',
+    supportPaypalTitle: 'Support the project via PayPal (lataczwojciech@gmail.com)',
+    supportCopyEmail: 'Copy email',
+    supportCopyTitle: 'Copy PayPal email address (lataczwojciech@gmail.com)',
+    supportCopied: '✅ Email copied!',
+    supportLinkedinTitle: 'Author profile on LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Localhost & Dev Ports',
     portsHeaderLabel: (n) => `Listening TCP Ports (${n})`,
@@ -755,6 +769,13 @@ function setLanguage(lang) {
   if (btnHomeP) btnHomeP.textContent = t('homeProcsBtn');
   const btnHomeC = $('btnHomeCleaner');
   if (btnHomeC) btnHomeC.textContent = t('homeCleanerBtn');
+
+  if ($('homeSupportText')) $('homeSupportText').textContent = t('supportHeader');
+  if ($('supportPaypalLabel')) $('supportPaypalLabel').textContent = t('supportPaypalBtn');
+  if ($('btnSupportPaypal')) $('btnSupportPaypal').title = t('supportPaypalTitle');
+  if ($('supportCopyLabel')) $('supportCopyLabel').textContent = t('supportCopyEmail');
+  if ($('btnCopyPaypalEmail')) $('btnCopyPaypalEmail').title = t('supportCopyTitle');
+  if ($('btnSupportLinkedin')) $('btnSupportLinkedin').title = t('supportLinkedinTitle');
 
   const secPortsH2 = document.querySelector('#sec-ports h2');
   if (secPortsH2) secPortsH2.textContent = t('portsTitle');
@@ -2270,6 +2291,41 @@ tiny.api.on('speedtest-progress', (info) => {
     $('speedtestFill').style.width = `${Math.min(100, Math.max(5, info.progress || 10))}%`;
   }
 });
+
+// Creator Support & Coffee handlers
+if ($('btnCopyPaypalEmail')) {
+  $('btnCopyPaypalEmail').addEventListener('click', async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText('lataczwojciech@gmail.com');
+      }
+      const label = $('supportCopyLabel');
+      if (label) {
+        const orig = label.textContent;
+        label.textContent = t('supportCopied');
+        setTimeout(() => {
+          label.textContent = orig;
+        }, 2200);
+      }
+    } catch (_) {}
+  });
+}
+
+if ($('btnSupportPaypal')) {
+  $('btnSupportPaypal').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const url = 'https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN';
+    tiny?.api?.call?.('openExternal', { url }).catch(() => {});
+  });
+}
+
+if ($('btnSupportLinkedin')) {
+  $('btnSupportLinkedin').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const url = 'https://www.linkedin.com/in/wlatacz';
+    tiny?.api?.call?.('openExternal', { url }).catch(() => {});
+  });
+}
 
 // =========================================================================
 // Modern Floating Dark-Glass Tooltip Engine (Variant A)

@@ -844,6 +844,25 @@ export const api = {
     return { ok: true };
   },
 
+  async openExternal({ url = '' } = {}, app) {
+    if (!url) return { ok: false };
+    const str = String(url);
+    if (!str.startsWith('https://') && !str.startsWith('http://') && !str.startsWith('mailto:')) {
+      return { ok: false, error: 'INVALID_URL' };
+    }
+    try {
+      if (typeof app.openURL === 'function') {
+        await app.openURL(str);
+      } else {
+        const proc = tjs.spawn(['/usr/bin/open', str], { stdout: 'ignore', stderr: 'ignore' });
+        await proc.wait();
+      }
+      return { ok: true };
+    } catch (_) {
+      return { ok: false };
+    }
+  },
+
   async toggleCaffeinate({ value } = {}, app) {
     const target = typeof value === 'boolean' ? value : !caffeinateActive;
     if (target) {

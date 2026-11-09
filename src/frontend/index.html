@@ -309,7 +309,7 @@
 
         <div class="home-actions-bar">
           <button class="home-action-btn" id="btnHomeCleanRam" type="button" title="Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM">
-            🧹 <span id="homeCleanRamLabel">Odśwież RAM i DNS</span>
+            <span id="homeCleanRamLabel">🧹 Odśwież RAM i DNS</span>
           </button>
           <button class="home-action-btn" id="btnHomeProcs" type="button" data-jump="top-cpu" title="Przejdź do pełnej listy procesów CPU i RAM">
             ⚡ Procesy
@@ -317,6 +317,28 @@
           <button class="home-action-btn" id="btnHomeCleaner" type="button" data-jump="cleaner" title="Przejdź do Smart Cleanera">
             🔍 Smart Cleaner
           </button>
+        </div>
+
+        <!-- Creator Support & Coffee Card -->
+        <div class="home-support-card" id="homeSupportCard">
+          <div class="home-support-header">
+            <span class="home-support-heart">☕</span>
+            <span class="home-support-text" id="homeSupportText">Podoba Ci się Latata.Hub? Wesprzyj twórcę!</span>
+          </div>
+          <div class="home-support-links">
+            <a class="home-support-btn paypal-btn" id="btnSupportPaypal" href="https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN" target="_blank" title="Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)">
+              <span class="support-icon">🅿️</span>
+              <span id="supportPaypalLabel">PayPal</span>
+            </a>
+            <button class="home-support-btn copy-btn" id="btnCopyPaypalEmail" type="button" title="Skopiuj adres e-mail do przelewu PayPal: lataczwojciech@gmail.com">
+              <span>📋</span>
+              <span id="supportCopyLabel">Kopiuj e-mail</span>
+            </button>
+            <a class="home-support-btn linkedin-btn" id="btnSupportLinkedin" href="https://www.linkedin.com/in/wlatacz" target="_blank" title="Profil autora na LinkedIn (Wojciech Łatacz)">
+              <span class="support-icon">💼</span>
+              <span>LinkedIn</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>
