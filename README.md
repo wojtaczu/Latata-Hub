@@ -9,6 +9,12 @@
 
 ---
 
+<p align="center">
+  <img src="assets/screenshot.png" width="356" alt="Latata.Hub macOS Widget Preview" />
+</p>
+
+---
+
 ## ⚡ Performance Highlights
 
 - **RAM Footprint**: **~35 MB** total memory consumption (vs 250–400 MB in typical Electron-based apps).

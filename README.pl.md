@@ -9,6 +9,12 @@
 
 ---
 
+<p align="center">
+  <img src="assets/screenshot.png" width="356" alt="Podgląd widgetu Latata.Hub na macOS" />
+</p>
+
+---
+
 ## ⚡ Kluczowe Osiągi
 
 - **Zużycie RAM**: **~35 MB** całkowitego narzutu pamięci (w porównaniu do 250–400 MB w typowych monitorach opartych na Electronie).
