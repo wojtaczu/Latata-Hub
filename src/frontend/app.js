@@ -237,11 +237,8 @@ const I18N = {
     homeProcsBtn: '⚡ Procesy',
     homeCleanerBtn: '🔍 Smart Cleaner',
     supportHeader: 'Podoba Ci się Latata.Hub? Wesprzyj twórcę!',
-    supportPaypalBtn: 'PayPal',
-    supportPaypalTitle: 'Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)',
-    supportCopyEmail: 'Kopiuj e-mail',
-    supportCopyTitle: 'Skopiuj adres e-mail do przelewu PayPal (lataczwojciech@gmail.com)',
-    supportCopied: '✅ Skopiowano e-mail!',
+    supportPaypalBtn: 'PayPal.Me',
+    supportPaypalTitle: 'Postaw wirtualną kawę przez PayPal.Me (paypal.me/wojtaczu)',
     supportLinkedinTitle: 'Profil autora na LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Porty Localhost & Dev',
@@ -481,11 +478,8 @@ const I18N = {
     homeProcsBtn: '⚡ Processes',
     homeCleanerBtn: '🔍 Smart Cleaner',
     supportHeader: 'Enjoying Latata.Hub? Support the creator!',
-    supportPaypalBtn: 'PayPal',
-    supportPaypalTitle: 'Support the project via PayPal (lataczwojciech@gmail.com)',
-    supportCopyEmail: 'Copy email',
-    supportCopyTitle: 'Copy PayPal email address (lataczwojciech@gmail.com)',
-    supportCopied: '✅ Email copied!',
+    supportPaypalBtn: 'PayPal.Me',
+    supportPaypalTitle: 'Support the project via PayPal.Me (paypal.me/wojtaczu)',
     supportLinkedinTitle: 'Author profile on LinkedIn (Wojciech Łatacz)',
 
     portsTitle: 'Localhost & Dev Ports',
@@ -773,8 +767,6 @@ function setLanguage(lang) {
   if ($('homeSupportText')) $('homeSupportText').textContent = t('supportHeader');
   if ($('supportPaypalLabel')) $('supportPaypalLabel').textContent = t('supportPaypalBtn');
   if ($('btnSupportPaypal')) $('btnSupportPaypal').title = t('supportPaypalTitle');
-  if ($('supportCopyLabel')) $('supportCopyLabel').textContent = t('supportCopyEmail');
-  if ($('btnCopyPaypalEmail')) $('btnCopyPaypalEmail').title = t('supportCopyTitle');
   if ($('btnSupportLinkedin')) $('btnSupportLinkedin').title = t('supportLinkedinTitle');
 
   const secPortsH2 = document.querySelector('#sec-ports h2');
@@ -2293,28 +2285,10 @@ tiny.api.on('speedtest-progress', (info) => {
 });
 
 // Creator Support & Coffee handlers
-if ($('btnCopyPaypalEmail')) {
-  $('btnCopyPaypalEmail').addEventListener('click', async () => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText('lataczwojciech@gmail.com');
-      }
-      const label = $('supportCopyLabel');
-      if (label) {
-        const orig = label.textContent;
-        label.textContent = t('supportCopied');
-        setTimeout(() => {
-          label.textContent = orig;
-        }, 2200);
-      }
-    } catch (_) {}
-  });
-}
-
 if ($('btnSupportPaypal')) {
   $('btnSupportPaypal').addEventListener('click', (ev) => {
     ev.preventDefault();
-    const url = 'https://www.paypal.com/myaccount/transfer/homepage/buy/preview?recipient=lataczwojciech@gmail.com';
+    const url = 'https://paypal.me/wojtaczu';
     tiny?.api?.call?.('openExternal', { url }).catch(() => {});
   });
 }
