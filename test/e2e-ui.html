@@ -4961,219 +4961,474 @@ function hideTooltip() {
 const TOOLTIP_DICTIONARY = [
   {
     match: (el) => el.id === 'liveDot',
-    title: '🟢 Połączenie z systemem',
-    desc: 'Aktywna dwustronna komunikacja IPC z silnikiem txiki.js i natywnym modułem macmon.',
+    pl: {
+      title: '🟢 Połączenie z systemem',
+      desc: 'Aktywna dwustronna komunikacja IPC z silnikiem txiki.js i natywnym modułem macmon.',
+    },
+    en: {
+      title: '🟢 System IPC Connection',
+      desc: 'Active bidirectional IPC communication with the txiki.js engine and native macmon helper.',
+    },
   },
   {
     match: (el) => el.id === 'btnToggleTooltips' || el.id === 'btnHomeToggleTooltips',
-    title: '💡 Podpowiedzi (Tooltipy)',
-    desc: 'Włącza lub całkowicie wyłącza dymki informacyjne z opisami funkcji przy najechaniu myszą.',
-    hint: 'Kliknij, aby przełączyć tryb podpowiedzi',
+    pl: {
+      title: '💡 Podpowiedzi (Tooltipy)',
+      desc: 'Włącza lub całkowicie wyłącza dymki informacyjne z opisami funkcji przy najechaniu myszą.',
+      hint: 'Kliknij, aby przełączyć tryb podpowiedzi',
+    },
+    en: {
+      title: '💡 Tips & Tooltips',
+      desc: 'Enables or completely disables dark-glass hover tooltip descriptions across the entire interface.',
+      hint: 'Click to toggle tooltips ON / OFF',
+    },
   },
   {
     match: (el) => el.id === 'btnCaffeinate',
-    title: '☕ Tryb Caffeinate',
-    desc: 'Blokuje wygaszanie ekranu i uśpienie Maca (przydatne przy pobieraniu, renderowaniu lub prezentacjach).',
-    hint: 'Kliknij: Włącz / Wyłącz',
+    pl: {
+      title: '☕ Tryb Caffeinate',
+      desc: 'Blokuje wygaszanie ekranu i uśpienie Maca (przydatne przy pobieraniu, renderowaniu lub prezentacjach).',
+      hint: 'Kliknij: Włącz / Wyłącz',
+    },
+    en: {
+      title: '☕ Caffeinate Mode',
+      desc: 'Prevents display sleep and Mac system idle sleep (useful for long renders, downloads, and presentations).',
+      hint: 'Click: Toggle Caffeinate ON / OFF',
+    },
   },
   {
     match: (el) => el.id === 'btnPin',
-    title: '📌 Zawsze na wierzchu',
-    desc: 'Utrzymuje okno monitora nad wszystkimi innymi aplikacjami i przestrzeniami roboczymi macOS.',
-    hint: 'Kliknij: Przypnij / Tryb widżetu',
+    pl: {
+      title: '📌 Zawsze na wierzchu',
+      desc: 'Utrzymuje okno monitora nad wszystkimi innymi aplikacjami i przestrzeniami roboczymi macOS.',
+      hint: 'Kliknij: Przypnij / Tryb widżetu',
+    },
+    en: {
+      title: '📌 Always on Top',
+      desc: 'Keeps the widget floating above all other windows and across all macOS Spaces.',
+      hint: 'Click: Pin / Desktop widget mode',
+    },
   },
   {
     match: (el) => el.id === 'btnCompact',
-    title: '📏 Rozmiar widżetu',
-    desc: 'Przełącza pomiędzy widokiem dopasowanym (356×548) a pełną kolumną (356×760).',
-    hint: 'Kliknij: Rozwiń / Zwiń',
+    pl: {
+      title: '📏 Rozmiar widżetu',
+      desc: 'Przełącza pomiędzy widokiem dopasowanym (356×548) a pełną kolumną (356×760).',
+      hint: 'Kliknij: Rozwiń / Zwiń',
+    },
+    en: {
+      title: '📏 Widget Size',
+      desc: 'Toggles between compact fitted mode (356×548) and full expanded column (356×760).',
+      hint: 'Click: Expand / Collapse',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'dashboard',
-    title: '🏠 Ekran Home',
-    desc: 'Pulpit podsumowania Maca: 4 wskaźniki kołowe, baterie akcesoriów, pojemność dysku i stan łącza.',
+    pl: {
+      title: '🏠 Ekran Home',
+      desc: 'Pulpit podsumowania Maca: 4 wskaźniki kołowe, baterie akcesoriów, pojemność dysku i stan łącza.',
+    },
+    en: {
+      title: '🏠 Home Dashboard',
+      desc: 'Mac overview dashboard: 4 activity rings, accessory batteries, storage capacity, and live glance.',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'procs',
-    title: '⚡ Menedżer procesów',
-    desc: 'Top 10 procesów obciążających procesor (CPU), pamięć (RAM) oraz aktywne porty sieciowe.',
+    pl: {
+      title: '⚡ Menedżer procesów',
+      desc: 'Top 10 procesów obciążających procesor (CPU), pamięć (RAM) oraz aktywne porty sieciowe.',
+    },
+    en: {
+      title: '⚡ Process Manager',
+      desc: 'Top 10 CPU-heavy and memory-heavy processes plus active developer listening TCP ports.',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'disk',
-    title: '💾 Pamięć masowa (Dysk)',
-    desc: 'Pojemność dysku SSD/HDD, wolne miejsce oraz eksplorator największych folderów i plików.',
+    pl: {
+      title: '💾 Pamięć masowa (Dysk)',
+      desc: 'Pojemność dysku SSD/HDD, wolne miejsce oraz eksplorator największych folderów i plików.',
+    },
+    en: {
+      title: '💾 Disk Storage',
+      desc: 'SSD/HDD volume capacity, APFS purgeable space, and largest directories/files explorer.',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'cleaner',
-    title: '🧹 Smart Cleaner',
-    desc: 'Skanowanie i czyszczenie pamięci podręcznej aplikacji, logów, Kosza i plików tymczasowych.',
+    pl: {
+      title: '🧹 Smart Cleaner',
+      desc: 'Skanowanie i czyszczenie pamięci podręcznej aplikacji, logów, Kosza i plików tymczasowych.',
+    },
+    en: {
+      title: '🧹 Smart Cleaner',
+      desc: 'Scan and safely clean application caches, developer artifacts, logs, and user Trash.',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'network',
-    title: '🌐 Sieć i Wi-Fi',
-    desc: 'Bieżący transfer danych, wykres pobierania/wysyłania, opóźnienie ping i wbudowany speedtest.',
+    pl: {
+      title: '🌐 Sieć i Wi-Fi',
+      desc: 'Bieżący transfer danych, wykres pobierania/wysyłania, opóźnienie ping i wbudowany speedtest.',
+    },
+    en: {
+      title: '🌐 Network & Wi-Fi',
+      desc: 'Real-time transfer rates, sparkline graph, Cloudflare ping latency, and built-in speedtest.',
+    },
   },
   {
     match: (el) => el.classList.contains('nav-tab') && el.dataset.tab === 'sensors',
-    title: '🌡 Sensory i Zasilanie',
-    desc: 'Temperatury procesora i GPU, stan ogniwa baterii, moc ładowarki USB-C i akcesoria Bluetooth.',
+    pl: {
+      title: '🌡 Sensory i Zasilanie',
+      desc: 'Temperatury procesora i GPU, stan ogniwa baterii, moc ładowarki USB-C i akcesoria Bluetooth.',
+    },
+    en: {
+      title: '🌡 Sensors & Power',
+      desc: 'CPU/GPU die thermals, battery pack health, USB-C adapter wattage, and Bluetooth accessories.',
+    },
   },
   {
     match: (el) => el.id === 'subtabCpu',
-    title: '💻 Procesor CPU',
-    desc: 'Top 10 procesów najbardziej obciążających rdzenie procesora Apple Silicon.',
+    pl: {
+      title: '💻 Procesor CPU',
+      desc: 'Top 10 procesów najbardziej obciążających rdzenie procesora Apple Silicon.',
+    },
+    en: {
+      title: '💻 CPU Processor',
+      desc: 'Top 10 processes consuming the most Apple Silicon CPU core cycles.',
+    },
   },
   {
     match: (el) => el.id === 'subtabRam',
-    title: '🧠 Pamięć RAM',
-    desc: 'Top 10 procesów zużywających najwięcej fizycznej pamięci operacyjnej RAM.',
+    pl: {
+      title: '🧠 Pamięć RAM',
+      desc: 'Top 10 procesów zużywających najwięcej fizycznej pamięci operacyjnej RAM.',
+    },
+    en: {
+      title: '🧠 RAM Memory',
+      desc: 'Top 10 processes consuming the most physical and resident RAM memory.',
+    },
   },
   {
     match: (el) => el.id === 'subtabPorts',
-    title: '⇄ Porty TCP',
-    desc: 'Nasłuchujące porty sieciowe dev/localhost (serwery www, bazy danych, kontenery Docker).',
+    pl: {
+      title: '⇄ Porty TCP',
+      desc: 'Nasłuchujące porty sieciowe dev/localhost (serwery www, bazy danych, kontenery Docker).',
+    },
+    en: {
+      title: '⇄ TCP Ports',
+      desc: 'Listening developer and localhost ports (web servers, databases, Docker containers).',
+    },
   },
   {
     match: (el) => el.dataset.jump === 'top-cpu' && el.classList.contains('hud-tile'),
-    title: '💻 Procesor (CPU)',
-    desc: 'Całkowite obciążenie rdzeni procesora oraz temperatura układu SoC.',
-    hint: 'Kliknij: Zobacz listę procesów CPU',
+    pl: {
+      title: '💻 Procesor (CPU)',
+      desc: 'Całkowite obciążenie rdzeni procesora oraz temperatura układu SoC.',
+      hint: 'Kliknij: Zobacz listę procesów CPU',
+    },
+    en: {
+      title: '💻 CPU Processor',
+      desc: 'Total core load and Apple Silicon SoC die temperature.',
+      hint: 'Click: View CPU Top 10',
+    },
   },
   {
     match: (el) => el.dataset.jump === 'top-ram' && el.classList.contains('hud-tile'),
-    title: '🧠 Pamięć operacyjna (RAM)',
-    desc: 'Pamięć zajęta przez aplikacje i system wraz z poziomem presji pamięci.',
-    hint: 'Kliknij: Zobacz listę procesów RAM',
+    pl: {
+      title: '🧠 Pamięć operacyjna (RAM)',
+      desc: 'Pamięć zajęta przez aplikacje i system wraz z poziomem presji pamięci.',
+      hint: 'Kliknij: Zobacz listę procesów RAM',
+    },
+    en: {
+      title: '🧠 RAM Memory',
+      desc: 'Active application and wired memory usage along with memory pressure level.',
+      hint: 'Click: View RAM Top 10',
+    },
   },
   {
     match: (el) => el.dataset.jump === 'power' && el.classList.contains('hud-tile') && !el.id.startsWith('btSlot'),
-    title: '⚡ Karta graficzna (GPU)',
-    desc: 'Wykorzystanie rdzeni graficznych Apple Silicon, silnika renderowania i temperatura.',
-    hint: 'Kliknij: Zobacz sensory i zasilanie',
+    pl: {
+      title: '⚡ Karta graficzna (GPU)',
+      desc: 'Wykorzystanie rdzeni graficznych Apple Silicon, silnika renderowania i temperatura.',
+      hint: 'Kliknij: Zobacz sensory i zasilanie',
+    },
+    en: {
+      title: '⚡ GPU Graphics',
+      desc: 'Apple Silicon GPU core utilization, renderer/tiler loads, and thermal metrics.',
+      hint: 'Click: View GPU & Thermals',
+    },
   },
   {
     match: (el) => el.dataset.jump === 'network' && el.classList.contains('hud-tile'),
-    title: '📶 Połączenie Wi-Fi',
-    desc: 'Jakość sygnału bezprzewodowego wyliczona z poziomu RSSI oraz szumów tła.',
-    hint: 'Kliknij: Zobacz szczegóły sieci',
+    pl: {
+      title: '📶 Połączenie Wi-Fi',
+      desc: 'Jakość sygnału bezprzewodowego wyliczona z poziomu RSSI oraz szumów tła.',
+      hint: 'Kliknij: Zobacz szczegóły sieci',
+    },
+    en: {
+      title: '📶 Wi-Fi Connection',
+      desc: 'Wireless signal quality calculated from live RSSI signal strength and noise floor.',
+      hint: 'Click: View Network details',
+    },
   },
   {
     match: (el) => el.id === 'btSlot0',
-    title: '🔋 Bateria MacBooka',
-    desc: 'Bieżący poziom naładowania, moc zasilacza USB-C oraz kondycja ogniwa.',
-    hint: 'Kliknij: Zobacz szczegóły zasilania',
+    pl: {
+      title: '🔋 Bateria MacBooka',
+      desc: 'Bieżący poziom naładowania, moc zasilacza USB-C oraz kondycja ogniwa.',
+      hint: 'Kliknij: Zobacz szczegóły zasilania',
+    },
+    en: {
+      title: '🔋 MacBook Battery',
+      desc: 'Current battery percentage, USB-C adapter wattage, and cycle health.',
+      hint: 'Click: View Power details',
+    },
   },
   {
     match: (el) => el.id === 'btSlot1' || el.id === 'btSlot2' || el.id === 'btSlot3',
-    title: '🎧 Akcesorium Bluetooth',
-    desc: 'Poziom naładowania podłączonego urządzenia (słuchawki lewa/prawa, mysz, klawiatura, etui).',
+    pl: {
+      title: '🎧 Akcesorium Bluetooth',
+      desc: 'Poziom naładowania podłączonego urządzenia (słuchawki lewa/prawa, mysz, klawiatura, etui).',
+    },
+    en: {
+      title: '🎧 Bluetooth Accessory',
+      desc: 'Battery level of connected peripheral (earbuds L/R, mouse, keyboard, charging case).',
+    },
   },
   {
     match: (el) => el.id === 'diskHudBar',
-    title: '💾 Dysk SSD / HDD',
-    desc: 'Wolna i całkowita przestrzeń na dysku systemowym oraz bufory APFS.',
-    hint: 'Kliknij: Zobacz największe katalogi i pliki',
+    pl: {
+      title: '💾 Dysk SSD / HDD',
+      desc: 'Wolna i całkowita przestrzeń na dysku systemowym oraz bufory APFS.',
+      hint: 'Kliknij: Zobacz największe katalogi i pliki',
+    },
+    en: {
+      title: '💾 SSD Storage',
+      desc: 'Free and total space on the macOS boot volume plus APFS purgeable buffers.',
+      hint: 'Click: View Disk analyzer',
+    },
   },
   {
     match: (el) => el.id === 'btnHudCleaner',
-    title: '🧹 Szybki Cleaner',
-    desc: 'Wykryte śmieci systemowe i pliki tymczasowe gotowe do bezpiecznego usunięcia.',
-    hint: 'Kliknij: Otwórz Smart Cleaner',
+    pl: {
+      title: '🧹 Szybki Cleaner',
+      desc: 'Wykryte śmieci systemowe i pliki tymczasowe gotowe do bezpiecznego usunięcia.',
+      hint: 'Kliknij: Otwórz Smart Cleaner',
+    },
+    en: {
+      title: '🧹 Quick Cleaner',
+      desc: 'Scanned system junk and caches ready for safe cleanup.',
+      hint: 'Click: Open Smart Cleaner',
+    },
   },
   {
     match: (el) => el.dataset.killPid,
-    title: '✕ Zakończ proces',
-    desc: 'Wysyła bezpieczny sygnał zakończenia SIGTERM do wybranego procesu.',
-    hint: '<kbd>⌥ Option</kbd> + kliknięcie: Wymuś natychmiastowe zabicie (<kbd>kill -9</kbd>)',
+    pl: {
+      title: '✕ Zakończ proces',
+      desc: 'Wysyła bezpieczny sygnał zakończenia SIGTERM do wybranego procesu.',
+      hint: '<kbd>⌥ Option</kbd> + kliknięcie: Wymuś natychmiastowe zabicie (<kbd>kill -9</kbd>)',
+    },
+    en: {
+      title: '✕ Terminate Process',
+      desc: 'Sends a standard SIGTERM signal to gently terminate the process.',
+      hint: '<kbd>⌥ Option</kbd> + click: Force kill (<kbd>kill -9</kbd>)',
+    },
   },
   {
     match: (el) => el.dataset.drillDir,
-    title: '📁 Eksploruj folder',
-    desc: 'Przejdź w głąb tego katalogu, aby sprawdzić które podfoldery zajmują najwięcej miejsca.',
-    hint: 'Kliknij: Otwórz ten katalog w analizatorze',
+    pl: {
+      title: '📁 Eksploruj folder',
+      desc: 'Przejdź w głąb tego katalogu, aby sprawdzić które podfoldery zajmują najwięcej miejsca.',
+      hint: 'Kliknij: Otwórz ten katalog w analizatorze',
+    },
+    en: {
+      title: '📁 Drill into Folder',
+      desc: 'Inspect this directory to identify which subfolders consume the most space.',
+      hint: 'Click: Open this directory in analyzer',
+    },
   },
   {
     match: (el) => el.dataset.revealPath,
-    title: '📂 Pokaż w Finderze',
-    desc: 'Otwiera systemowe okno Findera i podświetla ten element na dysku.',
-    hint: 'Kliknij: Otwórz w Finderze',
+    pl: {
+      title: '📂 Pokaż w Finderze',
+      desc: 'Otwiera systemowe okno Findera i podświetla ten element na dysku.',
+      hint: 'Kliknij: Otwórz w Finderze',
+    },
+    en: {
+      title: '📂 Reveal in Finder',
+      desc: 'Opens a native macOS Finder window highlighting this file or directory.',
+      hint: 'Click: Reveal in Finder',
+    },
   },
   {
     match: (el) => el.id === 'btnHomeCleanRam' || el.id === 'btnCleanRam' || el.id === 'btnCleanRamAlt',
-    title: '🧹 Czyszczenie RAM i DNS',
-    desc: 'Opróżnia pamięć podręczną DNS (dscacheutil) i instruuje jądro XNU, aby zwolniło nieaktywny RAM.',
-    hint: 'Kliknij: Wyczyść pamięć i DNS',
+    pl: {
+      title: '🧹 Czyszczenie RAM i DNS',
+      desc: 'Opróżnia pamięć podręczną DNS (dscacheutil) i instruuje jądro XNU, aby zwolniło nieaktywny RAM.',
+      hint: 'Kliknij: Wyczyść pamięć i DNS',
+    },
+    en: {
+      title: '🧹 Flush RAM & DNS',
+      desc: 'Flushes DNS responder cache via dscacheutil and updates system RAM buffer statistics.',
+      hint: 'Click: Flush memory and DNS',
+    },
   },
   {
     match: (el) => el.id === 'btnSpeedtest',
-    title: '⚡ Test prędkości łącza',
-    desc: 'Mierzy rzeczywistą przepustowość pobierania i wysyłania łącząc się z brzegami CDN Cloudflare.',
-    hint: 'Kliknij: Uruchom Speedtest',
+    pl: {
+      title: '⚡ Test prędkości łącza',
+      desc: 'Mierzy rzeczywistą przepustowość pobierania i wysyłania łącząc się z brzegami CDN Cloudflare.',
+      hint: 'Kliknij: Uruchom Speedtest',
+    },
+    en: {
+      title: '⚡ Network Speedtest',
+      desc: 'Measures live download throughput against Cloudflare Edge CDN servers.',
+      hint: 'Click: Run Speedtest',
+    },
   },
   {
     match: (el) => el.id === 'btnScanJunk',
-    title: '🔍 Skanowanie śmieci',
-    desc: 'Sprawdza katalogi pamięci podręcznej Caches, logi deweloperskie i Kosz pod kątem zbędnych plików.',
-    hint: 'Kliknij: Rozpocznij skanowanie',
+    pl: {
+      title: '🔍 Skanowanie śmieci',
+      desc: 'Sprawdza katalogi pamięci podręcznej Caches, logi deweloperskie i Kosz pod kątem zbędnych plików.',
+      hint: 'Kliknij: Rozpocznij skanowanie',
+    },
+    en: {
+      title: '🔍 Scan Junk Files',
+      desc: 'Scans application caches, developer build artifacts, logs, and Trash.',
+      hint: 'Click: Start scan',
+    },
   },
   {
     match: (el) => el.id === 'btnCleanJunk',
-    title: '🗑️ Oczyść system',
-    desc: 'Trwale usuwa zaznaczone pliki tymczasowe, bufory aplikacji i opróżnia Kosz użytkownika.',
-    hint: 'Kliknij: Usuń zaznaczone śmieci',
+    pl: {
+      title: '🗑️ Oczyść system',
+      desc: 'Trwale usuwa zaznaczone pliki tymczasowe, bufory aplikacji i opróżnia Kosz użytkownika.',
+      hint: 'Kliknij: Usuń zaznaczone śmieci',
+    },
+    en: {
+      title: '🗑️ Clean System',
+      desc: 'Permanently deletes selected temporary caches, application buffers, and empties Trash.',
+      hint: 'Click: Clean selected junk',
+    },
   },
   {
     match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'power' && el.querySelector('#homeChipTemp'),
-    title: '🌡 Termika Apple Silicon',
-    desc: 'Maksymalna temperatura układu scalonego SoC (rdzenie CPU, GPU i silnik Neural Engine).',
-    hint: 'Kliknij: Przejdź do sensorów',
+    pl: {
+      title: '🌡 Termika Apple Silicon',
+      desc: 'Maksymalna temperatura układu scalonego SoC (rdzenie CPU, GPU i silnik Neural Engine).',
+      hint: 'Kliknij: Przejdź do sensorów',
+    },
+    en: {
+      title: '🌡 SoC Thermals',
+      desc: 'Peak package temperature across CPU, GPU, and Neural Engine cores.',
+      hint: 'Click: View Sensors',
+    },
   },
   {
     match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'power' && el.querySelector('#homeChipBatt'),
-    title: '🔋 Diagnostyka ogniwa',
-    desc: 'Bieżąca kondycja baterii w stosunku do pojemności fabrycznej oraz łączna liczba cykli ładowania.',
-    hint: 'Kliknij: Przejdź do zasilania',
+    pl: {
+      title: '🔋 Diagnostyka ogniwa',
+      desc: 'Bieżąca kondycja baterii w stosunku do pojemności fabrycznej oraz łączna liczba cykli ładowania.',
+      hint: 'Kliknij: Przejdź do zasilania',
+    },
+    en: {
+      title: '🔋 Battery Health',
+      desc: 'Current battery health against design capacity and total charge cycle count.',
+      hint: 'Click: View Battery',
+    },
   },
   {
     match: (el) => el.classList.contains('home-chip') && el.dataset.jump === 'network',
-    title: '⚡ Jakość łącza (Ping)',
-    desc: 'Średni czas podróży pakietu sieciowego w ms oraz aktualna prędkość pobierania.',
-    hint: 'Kliknij: Przejdź do parametrów sieci',
+    pl: {
+      title: '⚡ Jakość łącza (Ping)',
+      desc: 'Średni czas podróży pakietu sieciowego w ms oraz aktualna prędkość pobierania.',
+      hint: 'Kliknij: Przejdź do parametrów sieci',
+    },
+    en: {
+      title: '⚡ Network Latency (Ping)',
+      desc: 'Round-trip ICMP packet latency in milliseconds and real-time download throughput.',
+      hint: 'Click: View Network',
+    },
   },
   {
     match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'top-cpu',
-    title: '📊 Obciążenie systemu (Load)',
-    desc: 'Średnia liczba wątków oczekujących na procesor w oknie 1 minuty oraz 5 minut.',
+    pl: {
+      title: '📊 Obciążenie systemu (Load)',
+      desc: 'Średnia liczba wątków oczekujących na procesor w oknie 1 minuty oraz 5 minut.',
+    },
+    en: {
+      title: '📊 System Load Average',
+      desc: 'Average number of runnable threads waiting for CPU scheduling over 1m and 5m.',
+    },
   },
   {
     match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'top-ram',
-    title: '🔄 Pamięć wymiany (Swap)',
-    desc: 'Ilość danych przeniesionych tymczasowo z pamięci RAM na szybki dysk SSD.',
+    pl: {
+      title: '🔄 Pamięć wymiany (Swap)',
+      desc: 'Ilość danych przeniesionych tymczasowo z pamięci RAM na szybki dysk SSD.',
+    },
+    en: {
+      title: '🔄 Swap Memory',
+      desc: 'Virtual memory pages temporarily swapped from RAM out to SSD storage.',
+    },
   },
   {
     match: (el) => el.classList.contains('home-sys-pill') && el.dataset.jump === 'dev',
-    title: '🐳 Środowisko Docker',
-    desc: 'Status silnika kontenerów Docker Desktop / OrbStack i pamięć zaalokowana przez kontenery.',
+    pl: {
+      title: '🐳 Środowisko Docker',
+      desc: 'Status silnika kontenerów Docker Desktop / OrbStack i pamięć zaalokowana przez kontenery.',
+    },
+    en: {
+      title: '🐳 Docker Environment',
+      desc: 'Status of Docker Desktop / OrbStack runtime and container allocated memory.',
+    },
   },
   {
     match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('.strip-icon.down'),
-    title: '↓ Prędkość pobierania',
-    desc: 'Aktualna przepustowość danych pobieranych z sieci w czasie rzeczywistym.',
+    pl: {
+      title: '↓ Prędkość pobierania',
+      desc: 'Aktualna przepustowość danych pobieranych z sieci w czasie rzeczywistym.',
+    },
+    en: {
+      title: '↓ Download Rate',
+      desc: 'Current inbound network throughput in real time.',
+    },
   },
   {
     match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('.strip-icon.up'),
-    title: '↑ Prędkość wysyłania',
-    desc: 'Aktualna przepustowość danych wysyłanych do sieci w czasie rzeczywistym.',
+    pl: {
+      title: '↑ Prędkość wysyłania',
+      desc: 'Aktualna przepustowość danych wysyłanych do sieci w czasie rzeczywistym.',
+    },
+    en: {
+      title: '↑ Upload Rate',
+      desc: 'Current outbound network throughput in real time.',
+    },
   },
   {
     match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('#stripPing'),
-    title: '⚡ Opóźnienie sieci (Ping)',
-    desc: 'Czas odpowiedzi pakietu ICMP do najbliższego serwera DNS Cloudflare (1.1.1.1).',
+    pl: {
+      title: '⚡ Opóźnienie sieci (Ping)',
+      desc: 'Czas odpowiedzi pakietu ICMP do najbliższego serwera DNS Cloudflare (1.1.1.1).',
+    },
+    en: {
+      title: '⚡ Ping Latency',
+      desc: 'ICMP round-trip latency to the nearest Cloudflare DNS resolver (1.1.1.1).',
+    },
   },
   {
     match: (el) => el.classList.contains('mini-strip-item') && el.querySelector('#stripPortsItem'),
-    title: '⇄ Porty sieciowe',
-    desc: 'Liczba aktywnych portów TCP nasłuchujących połączeń na Twoim Macu.',
+    pl: {
+      title: '⇄ Porty sieciowe',
+      desc: 'Liczba aktywnych portów TCP nasłuchujących połączeń na Twoim Macu.',
+    },
+    en: {
+      title: '⇄ Listening Ports',
+      desc: 'Count of active TCP ports listening for incoming connections.',
+    },
   },
 ];
 
