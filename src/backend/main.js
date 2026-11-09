@@ -1,4 +1,4 @@
-// TinyMonitor Backend — runs on txiki.js (QuickJS + libuv)
+// Latata.Hub Backend — runs on txiki.js (QuickJS + libuv)
 // Collects real-time hardware & network telemetry and pushes updates to the UI.
 
 let prevCpus = null;
@@ -197,7 +197,8 @@ async function resolveMissingIcons(paths, app) {
   const seen = new Set();
   for (const p of paths) {
     if (p && !iconCache.has(p) && !seen.has(p)) {
-      if (!p.startsWith('/Applications') && !p.startsWith('/System')) {
+      const std = String(p).replace(/\\/g, '/');
+      if (!std.startsWith('/Applications/') && !std.startsWith('/System/') && std !== '/Applications' && std !== '/System') {
         iconCache.set(p, null);
         continue;
       }
@@ -806,11 +807,22 @@ export const api = {
     if (target) {
       if (!caffeinateActive) {
         try {
-          caffeinateProc = tjs.spawn(['/usr/bin/caffeinate', '-di'], {
+          const myPid = tjs.pid || 0;
+          const args = myPid > 1 ? ['-dis', '-w', String(myPid)] : ['-dis'];
+          caffeinateProc = tjs.spawn(['/usr/bin/caffeinate', ...args], {
             stdout: 'ignore',
             stderr: 'ignore',
           });
+          caffeinatePid = caffeinateProc.pid || 0;
           caffeinateActive = true;
+          if (caffeinateProc?.wait) {
+            caffeinateProc.wait().then(() => {
+              caffeinateActive = false;
+              caffeinatePid = 0;
+              caffeinateProc = null;
+              try { app.push('caffeinate-state', { caffeinateActive: false }); } catch (_) {}
+            }).catch(() => {});
+          }
         } catch (_) {}
       }
     } else {
@@ -837,10 +849,6 @@ export const api = {
 
   async cleanRamAndDns(_params, app) {
     const bin = await resolveMacmonPath(app);
-    const beforeData = await runMacmon(app);
-    const beforeFree = Number(beforeData?.memory?.free || 0);
-    const beforeCached = Number(beforeData?.memory?.cached || 0);
-
     if (bin) {
       try {
         const proc = tjs.spawn([bin, '--flush-cache'], {
@@ -853,13 +861,10 @@ export const api = {
 
     const afterSnap = await collectTelemetry(app);
     app.push('telemetry', afterSnap);
-    const afterFree = Number(afterSnap?.memory?.free || beforeFree);
-    const deltaBytes = Math.max(0, afterFree - beforeFree);
     return {
       ok: true,
-      freedBytes: deltaBytes,
-      cachedBytes: beforeCached,
-      freeAfterBytes: afterFree,
+      freeBytes: afterSnap?.memory?.free || 0,
+      cachedBytes: afterSnap?.memory?.cached || 0,
     };
   },
 
@@ -919,7 +924,7 @@ export const api = {
     }
   },
 
-  async killProcess({ pid, force = false } = {}, app) {
+  async killProcess({ pid, force = false, name = '' } = {}, app) {
     const targetPid = Number(pid) || 0;
     if (targetPid <= 1) {
       return { ok: false, error: 'Nieprawidłowy PID' };
@@ -930,7 +935,8 @@ export const api = {
     }
     try {
       const sig = force ? '9' : '15';
-      const proc = tjs.spawn([bin, '--kill', String(targetPid), sig], {
+      const args = name ? [bin, '--kill', String(targetPid), sig, String(name)] : [bin, '--kill', String(targetPid), sig];
+      const proc = tjs.spawn(args, {
         stdout: 'pipe',
         stderr: 'ignore',
       });
@@ -955,11 +961,10 @@ export const api = {
     }
     isSpeedtesting = true;
     try {
-      app.push('speedtest-progress', { phase: 'ping', progress: 10, message: 'Pomiar opóźnienia (Ping)...' });
+      app.push('speedtest-progress', { phase: 'ping', progress: 10, message: 'Pomiar opóźnienia HTTP (Ping)...' });
       const tPing0 = Date.now();
       await fetch('https://speed.cloudflare.com/__down?bytes=0', { cache: 'no-store' });
       const latencyMs = Math.max(1, Date.now() - tPing0);
-      latestPingMs = latencyMs;
 
       app.push('speedtest-progress', {
         phase: 'download',
@@ -1065,7 +1070,10 @@ export async function init(app) {
   await runJunkScanOnce(app).catch(() => {});
 
   let tickCount = 0;
+  let isTicking = false;
   const runTick = async () => {
+    if (isTicking) return;
+    isTicking = true;
     try {
       const snapshot = await collectTelemetry(app);
       app.push('telemetry', snapshot);
@@ -1074,7 +1082,10 @@ export async function init(app) {
         updateTrayMenu(app, snapshot);
       }
       tickCount++;
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      isTicking = false;
+    }
   };
 
   await runTick();

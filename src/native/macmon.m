@@ -80,22 +80,24 @@ static uint64_t directorySizeFast(NSString *path) {
 
 static BOOL isProtectedCacheFolder(NSString *name) {
     if (!name || name.length == 0) return YES;
-    NSSet *skip = [NSSet setWithArray:@[
-        @"CloudKit",
-        @"FamilyCircle",
-        @"com.apple.Safari",
-        @"com.apple.HomeKit",
-        @"com.apple.ap.adprivacyd",
-        @"com.apple.containermanagerd",
-        @"com.apple.bird",
-        @"GeoServices",
-        @"google.GeminiMacOS",
-        @"com.google.GeminiMacOS",
-        @"pip",
-        @"Homebrew",
-        @"CocoaPods"
-    ]];
-    return [skip containsObject:name];
+    // Always protect Apple system caches and services
+    if ([name hasPrefix:@"com.apple."] || [name hasPrefix:@"apple."] ||
+        [name isEqualToString:@"CloudKit"] || [name isEqualToString:@"GeoServices"] ||
+        [name isEqualToString:@"FamilyCircle"]) {
+        return YES;
+    }
+    // Protect developer & package manager caches (handled safely in dev category)
+    if ([name isEqualToString:@"Homebrew"] || [name isEqualToString:@"pip"] ||
+        [name isEqualToString:@"CocoaPods"] || [name isEqualToString:@"npm"] ||
+        [name isEqualToString:@"yarn"]) {
+        return YES;
+    }
+    // Protect AI coding assistant caches
+    if ([name containsString:@"Gemini"] || [name containsString:@"Antigravity"] ||
+        [name containsString:@"Claude"] || [name containsString:@"Cursor"]) {
+        return YES;
+    }
+    return NO;
 }
 
 static NSArray<NSDictionary *> *extraAppCacheTargets(NSString *home) {
@@ -277,17 +279,9 @@ static int removeDirectoryChildren(NSString *dirPath, BOOL (^shouldSkip)(NSStrin
         if ([item isEqualToString:@"."] || [item isEqualToString:@".."]) continue;
         if (shouldSkip && shouldSkip(item)) continue;
         NSString *full = [dirPath stringByAppendingPathComponent:item];
+        // Safely remove the item. If locked or open by an active process, skip safely without corrupting internal files.
         if ([fm removeItemAtPath:full error:nil]) {
             removed++;
-        } else {
-            // If top-level folder is locked by a running app, try removing its inner files
-            NSArray *inner = [fm contentsOfDirectoryAtPath:full error:nil];
-            for (NSString *inItem in inner) {
-                NSString *inFull = [full stringByAppendingPathComponent:inItem];
-                if ([fm removeItemAtPath:inFull error:nil]) {
-                    removed++;
-                }
-            }
         }
     }
     return removed;
@@ -339,16 +333,14 @@ static NSDictionary *cleanSystemJunk(NSSet *selectedIds) {
     }
 
     if ([selectedIds containsObject:@"temp"]) {
-        NSString *tmpDir = NSTemporaryDirectory() ?: @"/tmp";
-        removedItems += removeDirectoryChildren(tmpDir, ^BOOL(NSString *item) {
-            return [item hasPrefix:@"."] || [item hasPrefix:@"tinyjs-"] || [item hasPrefix:@"tjs-"] || [item hasPrefix:@"com.apple."];
-        });
+        // Safe DNS cache flush (no blind wiping of other running apps' /var/folders/ temp files)
         NSTask *task = [[NSTask alloc] init];
         task.launchPath = @"/usr/bin/dscacheutil";
         task.arguments = @[@"-flushcache"];
         @try {
             [task launch];
             [task waitUntilExit];
+            removedItems++;
         } @catch (id _) {}
     }
 
@@ -586,12 +578,14 @@ static NSDictionary *scanDiskUsage(NSString *customPath) {
 
 static NSString *iconDataUrlForPath(NSString *path) {
     if (!path || path.length == 0) return nil;
-    // Only resolve native icons for installed application bundles in /Applications or /System.
-    // Never peek into user directories (~/Desktop, ~/Documents, ~/Downloads etc.) to prevent macOS TCC privacy dialogs.
-    if (![path hasPrefix:@"/Applications"] && ![path hasPrefix:@"/System"]) {
+    NSString *std = [path stringByStandardizingPath];
+    // Only resolve native icons for installed application bundles in /Applications/ or /System/.
+    // Strict path normalization protects against path traversal and peeking into user directories (~/Desktop etc.).
+    if (![std hasPrefix:@"/Applications/"] && ![std hasPrefix:@"/System/"] &&
+        ![std isEqualToString:@"/Applications"] && ![std isEqualToString:@"/System"]) {
         return nil;
     }
-    NSImage *icon = [[NSWorkspace sharedWorkspace] iconForFile:path];
+    NSImage *icon = [[NSWorkspace sharedWorkspace] iconForFile:std];
     if (!icon) return nil;
     int px = 32;
     NSBitmapImageRep *rep = [[NSBitmapImageRep alloc]
@@ -656,8 +650,37 @@ int main(int argc, const char * argv[]) {
         if (argc >= 3 && strcmp(argv[1], "--kill") == 0) {
             pid_t targetPid = (pid_t)atoi(argv[2]);
             int sig = (argc >= 4) ? atoi(argv[3]) : SIGTERM;
+            NSString *expectedName = (argc >= 5) ? [NSString stringWithUTF8String:argv[4]] : nil;
             if (sig != SIGKILL && sig != SIGTERM && sig != SIGINT) sig = SIGTERM;
-            int rc = (targetPid > 1) ? kill(targetPid, sig) : -1;
+
+            if (targetPid <= 1) {
+                NSDictionary *res = @{@"ok": @(NO), @"error": @"Invalid PID (<= 1 prohibited)"};
+                NSData *d = [NSJSONSerialization dataWithJSONObject:res options:0 error:nil];
+                if (d) { fwrite(d.bytes, 1, d.length, stdout); fwrite("\n", 1, 1, stdout); }
+                return 0;
+            }
+
+            // Verify process name against PID recycling
+            if (expectedName && expectedName.length > 0) {
+                char curName[256] = {0};
+                int len = proc_name(targetPid, curName, sizeof(curName));
+                if (len > 0) {
+                    NSString *actualName = [NSString stringWithUTF8String:curName];
+                    if (actualName && ![actualName isEqualToString:expectedName] &&
+                        ![actualName hasPrefix:expectedName] && ![expectedName hasPrefix:actualName]) {
+                        NSDictionary *res = @{
+                            @"ok": @(NO),
+                            @"pid": @(targetPid),
+                            @"error": [NSString stringWithFormat:@"Process name mismatch (expected '%@', found '%@')", expectedName, actualName]
+                        };
+                        NSData *d = [NSJSONSerialization dataWithJSONObject:res options:0 error:nil];
+                        if (d) { fwrite(d.bytes, 1, d.length, stdout); fwrite("\n", 1, 1, stdout); }
+                        return 0;
+                    }
+                }
+            }
+
+            int rc = kill(targetPid, sig);
             NSDictionary *res = @{
                 @"ok": @(rc == 0),
                 @"pid": @(targetPid),

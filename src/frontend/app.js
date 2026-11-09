@@ -1267,6 +1267,10 @@ if ($('btnCleanJunk')) {
       }
       return;
     }
+    if (categories.includes('trash')) {
+      const ok = window.confirm('Opróżnienie Kosza trwale usunie wszystkie pliki z folderu ~/.Trash.\n\nCzy na pewno chcesz kontynuować?');
+      if (!ok) return;
+    }
     isCleaningOrScanning = true;
     const btn = $('btnCleanJunk');
     const status = $('cleanerStatusText');
@@ -1310,18 +1314,18 @@ if ($('btnCleanRam')) {
     const btn = $('btnCleanRam');
     const status = $('ramCleanStatus');
     btn.disabled = true;
-    btn.textContent = 'Czyszczenie...';
-    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie RAM...';
+    btn.textContent = 'Odświeżanie...';
+    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie stanu pamięci...';
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (status && res?.ok) {
-        status.textContent = `Wyczyszczono DNS! Wolny RAM: ${fmtGB(res.afterFree || 0, 2)}`;
+        status.textContent = `Odświeżono DNS! Wolny RAM: ${fmtGB(res.freeBytes || 0, 2)}`;
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas czyszczenia DNS';
+      if (status) status.textContent = 'Błąd podczas odświeżania DNS';
     } finally {
       btn.disabled = false;
-      btn.textContent = '🧹 Wyczyść RAM i DNS';
+      btn.textContent = '🧹 Odśwież RAM i DNS';
     }
   });
 }
@@ -1381,18 +1385,18 @@ if ($('btnHomeCleanRam')) {
     const btn = $('btnHomeCleanRam');
     const label = $('homeCleanRamLabel');
     btn.disabled = true;
-    if (label) label.textContent = 'Czyszczenie...';
+    if (label) label.textContent = 'Odświeżanie...';
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (label) {
-        label.textContent = res?.ok ? '✅ Wyczyszczono RAM i DNS!' : 'Wyczyszczono';
+        label.textContent = res?.ok ? '✅ Odświeżono pamięć i DNS!' : 'Odświeżono';
       }
     } catch (_) {
-      if (label) label.textContent = 'Błąd czyszczenia';
+      if (label) label.textContent = 'Błąd odświeżania';
     } finally {
       setTimeout(() => {
         btn.disabled = false;
-        if (label) label.textContent = 'Wyczyść RAM i DNS';
+        if (label) label.textContent = 'Odśwież RAM i DNS';
       }, 2000);
     }
   });
@@ -1404,18 +1408,18 @@ if ($('btnCleanRamAlt')) {
     const btn = $('btnCleanRamAlt');
     const status = $('cleanerDnsStatus');
     btn.disabled = true;
-    btn.textContent = 'Czyszczenie...';
-    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie RAM...';
+    btn.textContent = 'Odświeżanie...';
+    if (status) status.textContent = 'Opróżnianie cache DNS i odświeżanie pamięci...';
     try {
       const res = await tiny.api.call('cleanRamAndDns');
       if (status && res?.ok) {
-        status.textContent = `Wyczyszczono DNS! Wolny RAM: ${fmtGB(res.afterFree || 0, 2)}`;
+        status.textContent = `Odświeżono DNS! Wolny RAM: ${fmtGB(res.freeBytes || 0, 2)}`;
       }
     } catch (_) {
-      if (status) status.textContent = 'Błąd podczas czyszczenia DNS';
+      if (status) status.textContent = 'Błąd podczas odświeżania DNS';
     } finally {
       btn.disabled = false;
-      btn.textContent = '🧹 Wyczyść RAM i DNS';
+      btn.textContent = '🧹 Odśwież RAM i DNS';
     }
   });
 }
@@ -1427,6 +1431,7 @@ $('cardsContainer').addEventListener('click', async (ev) => {
   ev.stopPropagation();
   const pid = Number(btn.dataset.killPid);
   if (!pid || pid <= 1) return;
+  const procName = btn.dataset.killName || '';
 
   const prevAttempt = recentlyKilledPids.get(pid) || 0;
   const force = Boolean(ev.altKey || ev.shiftKey || (Date.now() - prevAttempt < 5000));
@@ -1438,7 +1443,7 @@ $('cardsContainer').addEventListener('click', async (ev) => {
   }
   btn.textContent = '…';
   try {
-    await tiny.api.call('killProcess', { pid, force });
+    await tiny.api.call('killProcess', { pid, force, name: procName });
   } catch (_) {}
 });
 
