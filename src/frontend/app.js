@@ -2314,7 +2314,7 @@ if ($('btnCopyPaypalEmail')) {
 if ($('btnSupportPaypal')) {
   $('btnSupportPaypal').addEventListener('click', (ev) => {
     ev.preventDefault();
-    const url = 'https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN';
+    const url = 'https://www.paypal.com/myaccount/transfer/homepage/buy/preview?recipient=lataczwojciech@gmail.com';
     tiny?.api?.call?.('openExternal', { url }).catch(() => {});
   });
 }

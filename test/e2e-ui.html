@@ -2405,7 +2405,7 @@ html, body {
             <span class="home-support-text" id="homeSupportText">Podoba Ci się Latata.Hub? Wesprzyj twórcę!</span>
           </div>
           <div class="home-support-links">
-            <a class="home-support-btn paypal-btn" id="btnSupportPaypal" href="https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN" target="_blank" title="Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)">
+            <a class="home-support-btn paypal-btn" id="btnSupportPaypal" href="https://www.paypal.com/myaccount/transfer/homepage/buy/preview?recipient=lataczwojciech@gmail.com" target="_blank" title="Wesprzyj projekt przez PayPal (lataczwojciech@gmail.com)">
               <span class="support-icon">🅿️</span>
               <span id="supportPaypalLabel">PayPal</span>
             </a>
@@ -5151,7 +5151,7 @@ if ($('btnCopyPaypalEmail')) {
 if ($('btnSupportPaypal')) {
   $('btnSupportPaypal').addEventListener('click', (ev) => {
     ev.preventDefault();
-    const url = 'https://www.paypal.com/donate/?business=lataczwojciech%40gmail.com&currency_code=PLN';
+    const url = 'https://www.paypal.com/myaccount/transfer/homepage/buy/preview?recipient=lataczwojciech@gmail.com';
     tiny?.api?.call?.('openExternal', { url }).catch(() => {});
   });
 }
