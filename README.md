@@ -10,8 +10,37 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshot.png" width="356" alt="Latata.Hub macOS Widget Preview" />
+  <img src="assets/screenshot-desktop.jpg" width="100%" alt="Latata.Hub on macOS Desktop" />
 </p>
+
+<p align="center">
+  <em>Latata.Hub running natively on the macOS desktop alongside native widgets.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-en.png" width="48%" alt="Latata.Hub English Interface" />
+  &nbsp;
+  <img src="assets/screenshot-pl.png" width="48%" alt="Latata.Hub Polish Interface" />
+</p>
+
+<p align="center">
+  <em>Full bilingual support: English (left) and Polish (right) with instant one-click titlebar switching.</em>
+</p>
+
+---
+
+## 📦 Download & Quick Install
+
+Pre-compiled standalone builds for **Apple Silicon (macOS 12 Monterey or newer, M1/M2/M3/M4)** are available on GitHub Releases:
+
+[![Download Latata.Hub](https://img.shields.io/badge/Download-Latata.Hub_v1.4.0_(arm64)-0284c7?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/wojtaczu/Latata-Hub/releases/latest/download/Latata.Hub-macos-arm64.zip)
+
+1. Download [`Latata.Hub-macos-arm64.zip`](https://github.com/wojtaczu/Latata-Hub/releases/latest/download/Latata.Hub-macos-arm64.zip).
+2. Unpack and drag `Latata.Hub.app` into your `/Applications` folder.
+3. *(First launch only)* Because this is an unsigned open-source binary, if macOS Gatekeeper blocks opening it, remove the quarantine flag via Terminal:
+   ```bash
+   xattr -cr /Applications/Latata.Hub.app
+   ```
 
 ---
 
@@ -33,9 +62,10 @@
 - **Top 10 Processes**: Ranked live CPU and RAM consumption with extracted native macOS application icons and 1-Click Process Kill (with PID recycling protection).
 - **Developer Localhost Port Inspector**: Real-time listing of listening TCP ports, bound services, Docker daemon status, and process termination.
 - **Interactive Tooltip Engine**: Informative floating dark-glass tooltips with a quick titlebar `[ 💡 ON / OFF ]` toggle.
-- **Window Management**:
-  - **Always on Top (`Przypnij`)**: Pin the widget above all windows or keep it in the normal desktop layer.
-  - **Compact / Expand (`Zwiń / Rozwiń`)**: Toggle between compact (356×548) and full expanded (356×760) view.
+- **Bilingual Interface**: Seamless one-click switching between English (`[ 🇬🇧 EN ]`) and Polish (`[ 🇵🇱 PL ]`) with persistent language selection.
+- **Window Management & Pinning**:
+  - **Always on Top (`Pin` / `Pinned`)**: Pin the widget above all windows or keep it in the normal desktop layer.
+  - **Compact / Expand (`Expand` / `Collapse`)**: Toggle between compact (356×548) and full expanded (356×760) view.
   - **Caffeinate Mode (`☕`)**: Prevent system sleep with PID-bound auto-termination (`caffeinate -w <PID>`).
 - **Privacy-First Architecture (TCC Compliant)**: Safely inspects system metrics without probing personal directories (`Desktop`, `Documents`, `Photos`).
 

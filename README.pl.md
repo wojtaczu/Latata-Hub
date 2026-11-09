@@ -10,8 +10,37 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshot.png" width="356" alt="Podgląd widgetu Latata.Hub na macOS" />
+  <img src="assets/screenshot-desktop.jpg" width="100%" alt="Latata.Hub na Pulpicie macOS" />
 </p>
+
+<p align="center">
+  <em>Latata.Hub działający natywnie na pulpicie macOS obok widgetów systemowych.</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-pl.png" width="48%" alt="Interfejs w języku polskim" />
+  &nbsp;
+  <img src="assets/screenshot-en.png" width="48%" alt="Interfejs w języku angielskim" />
+</p>
+
+<p align="center">
+  <em>Pełna dwujęzyczność: wersja polska (z lewej) i angielska (z prawej) przełączana 1 kliknięciem w nagłówku.</em>
+</p>
+
+---
+
+## 📦 Pobieranie i Szybka Instalacja
+
+Gotowa, skompilowana aplikacja dla **Apple Silicon (macOS 12 Monterey lub nowszy, M1/M2/M3/M4)** jest dostępna w sekcji GitHub Releases:
+
+[![Pobierz Latata.Hub](https://img.shields.io/badge/Pobierz-Latata.Hub_v1.4.0_(arm64)-0284c7?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/wojtaczu/Latata-Hub/releases/latest/download/Latata.Hub-macos-arm64.zip)
+
+1. Pobierz plik [`Latata.Hub-macos-arm64.zip`](https://github.com/wojtaczu/Latata-Hub/releases/latest/download/Latata.Hub-macos-arm64.zip).
+2. Rozpakuj i przeciągnij `Latata.Hub.app` do folderu `/Applications` (Programy).
+3. *(Tylko przy pierwszym uruchomieniu)* Ponieważ jest to niepodpisana komercyjnie aplikacja open-source, jeśli macOS Gatekeeper wyświetli ostrzeżenie, usuń flagę kwarantanny poleceniem w Terminalu:
+   ```bash
+   xattr -cr /Applications/Latata.Hub.app
+   ```
 
 ---
 
@@ -33,9 +62,10 @@
 - **Top 10 Procesów**: Lista procesów najbardziej obciążających CPU i RAM, zintegrowana z natywnymi ikonami aplikacji macOS oraz natychmiastowym przyciskiem zakończenia procesu (1-Click Kill z ochroną przed PID recycling).
 - **Inspektor portów Localhost dla deweloperów**: Podgląd na żywo nasłuchujących portów TCP, procesów deweloperskich, stanu silnika Docker oraz możliwość zwalniania zablokowanych portów.
 - **Interaktywny silnik podpowiedzi (Tooltipy)**: Pływające dymki informacyjne z ciemnego szkła z wygodnym przełącznikiem `[ 💡 ON / OFF ]` na pasku tytułowym.
+- **Pełna dwujęzyczność**: Błyskawiczny przełącznik języka (`[ 🇬🇧 EN ]` / `[ 🇵🇱 PL ]`) z trwałym zapamiętywaniem preferencji użytkownika.
 - **Zarządzanie oknem widgetu**:
-  - **Zawsze na wierzchu (`Przypnij`)**: Przypnij widget nad wszystkimi oknami lub trzymaj go na standardowej warstwie biurka.
-  - **Dopasowany / Pełny (`Zwiń / Rozwiń`)**: Przełączaj między kompaktowym widokiem (356×548) a pełną kolumną (356×760).
+  - **Zawsze na wierzchu (`Przypnij` / `Przypięto`)**: Przypnij widget nad wszystkimi oknami lub trzymaj go na standardowej warstwie biurka.
+  - **Dopasowany / Pełny (`Rozwiń` / `Zwiń`)**: Przełączaj między kompaktowym widokiem (356×548) a pełną kolumną (356×760).
   - **Tryb Caffeinate (`☕`)**: Zablokuj usypianie Maca z automatycznym wygaszaniem procesu po zamknięciu aplikacji (`caffeinate -w <PID>`).
 - **Prywatność i bezpieczeństwo (TCC Compliant)**: Pełna ochrona prywatności – aplikacja nie przeszukuje prywatnych folderów użytkownika (`Biurko`, `Dokumenty`, `Zdjęcia`).
 
