@@ -4755,15 +4755,16 @@ if ($('btnCleanJunk')) {
     pendingCleanConfirm = false;
     if (cleanConfirmTimer) clearTimeout(cleanConfirmTimer);
     const btn = $('btnCleanJunk');
-    btn.style.borderColor = '';
-    btn.style.boxShadow = '';
+    if (btn) {
+      btn.style.borderColor = '';
+      btn.style.boxShadow = '';
+      btn.disabled = true;
+      btn.textContent = t('cleanerCleaning');
+    }
     isCleaningOrScanning = true;
-    const btn = $('btnCleanJunk');
     const status = $('cleanerStatusText');
     const track = $('cleanerProgTrack');
     const fill = $('cleanerProgFill');
-    btn.disabled = true;
-    btn.textContent = t('cleanerCleaning');
     if (status) status.textContent = t('cleanerCleaningProgress');
     if (track) track.hidden = false;
     if (fill) fill.style.width = '60%';
