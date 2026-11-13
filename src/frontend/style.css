@@ -576,7 +576,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
+  gap: 3px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .home-sys-pill {
@@ -584,16 +586,18 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3.5px;
-  padding: 3.5px 4px;
+  gap: 2.5px;
+  padding: 3px 2px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 8.5px;
+  font-size: 8px;
   color: var(--text-secondary);
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.14s ease;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .home-sys-pill:hover {
@@ -2050,4 +2054,26 @@ html, body {
   padding: 0 3px;
   font-size: 8.5px;
   color: #f1f5f9;
+}
+
+.tcc-grant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tcc-grant-btn:hover {
+  background: var(--accent);
+  color: #07090e;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
 }

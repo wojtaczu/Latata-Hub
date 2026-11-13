@@ -202,6 +202,14 @@ async function runBackendApiTest() {
   const resTipOn = await mainMod.api.setTooltipsState({ enabled: true }, mockApp);
   assert(resTipOn?.tooltipsEnabled === true, 'setTooltipsState enabled tooltips');
 
+  // Verify Autostart / Launch at Login API
+  assert(typeof mainMod.api.toggleAutostart === 'function', 'api.toggleAutostart is exported function');
+  assert(typeof mainMod.api.getAutostartState === 'function', 'api.getAutostartState is exported function');
+  const resAutoOn = await mainMod.api.toggleAutostart({ value: true }, mockApp);
+  assert(resAutoOn?.ok === true && resAutoOn?.enabled === true, 'toggleAutostart enabled autostart');
+  const resAutoOff = await mainMod.api.toggleAutostart({ value: false }, mockApp);
+  assert(resAutoOff?.ok === true && resAutoOff?.enabled === false, 'toggleAutostart disabled autostart');
+
   // Verify Security & Path Traversal Guards
   const resBadDisk = await mainMod.api.scanDiskUsage({ path: '/Applications/../Users' }, mockApp);
   assert(resBadDisk?.ok === false && resBadDisk?.error === 'INVALID_PATH', 'scanDiskUsage rejects path traversal attempts');
@@ -261,6 +269,7 @@ async function runConfigAndIntegrityTest() {
   assert(htmlText.includes('Latata<span class="accent">.Hub</span>'), 'index.html has brand Latata.Hub');
   assert(!htmlText.includes('Wujt Control Center'), 'index.html no longer contains legacy Wujt brand');
   assert(htmlText.includes('id="btnToggleTooltips"'), 'index.html includes #btnToggleTooltips switch');
+  assert(htmlText.includes('id="pillAutostart"'), 'index.html includes #pillAutostart toggle');
   assert(!htmlText.includes('id="btnDiskUp"'), 'index.html has removed obsolete #btnDiskUp (Wstecz) button');
   assert(htmlText.includes('id="btnScanDiskUsage"'), 'index.html includes #btnScanDiskUsage refresh button');
 

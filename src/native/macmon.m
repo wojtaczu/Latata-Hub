@@ -400,11 +400,17 @@ static void runSingleFtsPass(
     NSUInteger maxItems,
     NSMutableArray<NSDictionary *> *candidateDirs,
     NSMutableArray<NSDictionary *> *topFiles,
-    uint64_t *outTotalBytes
+    uint64_t *outTotalBytes,
+    BOOL *outPermissionDenied
 ) {
     char *paths[2] = { (char *)[scanRoot fileSystemRepresentation], NULL };
     FTS *fts = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, NULL);
-    if (!fts) return;
+    if (!fts) {
+        if (errno == EPERM || errno == EACCES) {
+            if (outPermissionDenied) *outPermissionDenied = YES;
+        }
+        return;
+    }
 
     NSSet *skipNames = tccProtectedFolderNames();
     uint64_t minTopFileBytes = isHomeRoot ? (128ULL * 1024ULL) : 1024ULL;
@@ -418,6 +424,12 @@ static void runSingleFtsPass(
     FTSENT *ent = NULL;
     while ((ent = fts_read(fts)) != NULL) {
         visitedCount++;
+        if (ent->fts_info == FTS_DNR || ent->fts_info == FTS_ERR) {
+            if (ent->fts_errno == EPERM || ent->fts_errno == EACCES) {
+                if (outPermissionDenied) *outPermissionDenied = YES;
+            }
+            continue;
+        }
         if (ent->fts_info == FTS_D) {
             ent->fts_number = 0;
             if (ent->fts_level > 0 && ent->fts_name[0] != '\0') {
@@ -548,13 +560,14 @@ static NSDictionary *scanDiskUsage(NSString *customPath) {
     NSMutableArray<NSDictionary *> *topFiles = [NSMutableArray array];
     NSUInteger maxItems = 10;
     uint64_t totalRootBytes = 0;
+    BOOL permissionDenied = NO;
 
-    runSingleFtsPass(rootPath, home, isHomeRoot, maxItems, candidateDirs, topFiles, &totalRootBytes);
+    runSingleFtsPass(rootPath, home, isHomeRoot, maxItems, candidateDirs, topFiles, &totalRootBytes, &permissionDenied);
 
     // Fallback if root directory listing was restricted (e.g. inside test sandbox)
-    if (isHomeRoot && candidateDirs.count == 0 && topFiles.count == 0) {
+    if (isHomeRoot && candidateDirs.count == 0 && topFiles.count == 0 && !permissionDenied) {
         if ([fm fileExistsAtPath:@"/Applications"]) {
-            runSingleFtsPass(@"/Applications", home, NO, maxItems, candidateDirs, topFiles, &totalRootBytes);
+            runSingleFtsPass(@"/Applications", home, NO, maxItems, candidateDirs, topFiles, &totalRootBytes, NULL);
         }
     }
 
@@ -572,7 +585,8 @@ static NSDictionary *scanDiskUsage(NSString *customPath) {
         @"parentPath": parentPath,
         @"totalScannedBytes": @(totalRootBytes),
         @"topDirs": topDirsResult,
-        @"topFiles": topFiles
+        @"topFiles": topFiles,
+        @"permissionDenied": @(permissionDenied)
     };
 }
 

@@ -10,7 +10,7 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshot-desktop.jpg" width="100%" alt="Latata.Hub na Pulpicie macOS" />
+  <img src="assets/screenshot-desktop-pl.jpg" width="100%" alt="Latata.Hub na Pulpicie macOS" />
 </p>
 
 <p align="center">

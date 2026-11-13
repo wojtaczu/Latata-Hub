@@ -20,13 +20,127 @@ let caffeinatePid = 0;
 let latestTelemetrySnapshot = null;
 let latestJunkScan = null;
 let lastJunkScanAt = 0;
-let isScanningJunk = false;
+let junkScanPromise = null;
 let latestDiskUsage = null;
 let lastDiskUsageAt = 0;
 let isScanningDiskUsage = false;
 let currentDiskUsagePath = '';
 let tooltipsEnabled = true;
 let appLang = 'pl';
+let autostartEnabled = false;
+
+async function getActualAppBundlePath() {
+  const exe = tjs.exePath || '';
+  const idx = exe.indexOf('.app');
+  if (idx !== -1) {
+    return exe.slice(0, idx + 4);
+  }
+  // If not running directly from a .app bundle, check standard locations
+  const appInApplications = '/Applications/Latata.Hub.app';
+  if (await tjs.stat(appInApplications).then(() => true).catch(() => false)) {
+    return appInApplications;
+  }
+  const homeApp = `${tjs.env.HOME || ''}/Applications/Latata.Hub.app`;
+  if (await tjs.stat(homeApp).then(() => true).catch(() => false)) {
+    return homeApp;
+  }
+  const cwdDist = `${tjs.cwd()}/dist/Latata.Hub.app`;
+  if (await tjs.stat(cwdDist).then(() => true).catch(() => false)) {
+    return cwdDist;
+  }
+  return appInApplications;
+}
+
+async function getLaunchAtLogin(app) {
+  try {
+    if (app?.launchAtLogin?.get) {
+      const st = await app.launchAtLogin.get();
+      if (st === 'enabled' || st === 'requires-approval') {
+        autostartEnabled = true;
+        return true;
+      }
+      if (st === 'disabled') {
+        autostartEnabled = false;
+        return false;
+      }
+    }
+  } catch (_) {}
+
+  // Check System Events login item as fallback
+  try {
+    const sc = `tell application "System Events" to return (exists (first login item whose name is "Latata.Hub"))`;
+    const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'pipe', stderr: 'ignore' });
+    const text = proc.stdout ? (await proc.stdout.text()).trim() : '';
+    await proc.wait();
+    if (text === 'true') {
+      autostartEnabled = true;
+      return true;
+    }
+    if (text === 'false') {
+      autostartEnabled = false;
+      return false;
+    }
+  } catch (_) {}
+
+  try {
+    const val = await app?.store?.get('autostart_enabled');
+    if (typeof val === 'boolean') {
+      autostartEnabled = val;
+      return val;
+    }
+  } catch (_) {}
+  return autostartEnabled;
+}
+
+async function setLaunchAtLogin(app, enabled) {
+  const target = Boolean(enabled);
+  let statusSet = false;
+
+  // 1. Native SMAppService (works when app is packaged and installed in /Applications)
+  try {
+    if (app?.launchAtLogin?.set) {
+      const st = await app.launchAtLogin.set(target);
+      if (st === 'enabled' || st === 'requires-approval') {
+        autostartEnabled = true;
+        statusSet = true;
+      } else if (st === 'disabled') {
+        autostartEnabled = false;
+        statusSet = true;
+      }
+    }
+  } catch (_) {}
+
+  // 2. AppleScript / System Events Login Item (works across all macOS paths, including dist/)
+  try {
+    const appPath = await getActualAppBundlePath();
+    if (target) {
+      const sc = `tell application "System Events"
+        try
+          delete (every login item whose name is "Latata.Hub")
+        end try
+        make login item at end with properties {path:"${appPath}", hidden:false, name:"Latata.Hub"}
+      end tell`;
+      const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
+      await proc.wait();
+      statusSet = true;
+    } else {
+      const sc = `tell application "System Events"
+        try
+          delete (every login item whose name is "Latata.Hub")
+        end try
+      end tell`;
+      const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
+      await proc.wait();
+      statusSet = true;
+    }
+  } catch (_) {}
+
+  autostartEnabled = target;
+  try {
+    await app?.store?.set('autostart_enabled', autostartEnabled);
+  } catch (_) {}
+  return { ok: true, enabled: autostartEnabled };
+}
 const caseBatteryCache = new Map();
 
 // Smart Alerts state
@@ -120,7 +234,7 @@ function readCpuUsage(cpuMeta) {
 async function resolveMacmonPath(app) {
   if (macmonBinPath) return macmonBinPath;
   try {
-    const paths = await app.paths();
+    const paths = typeof app?.paths === 'function' ? await app.paths() : null;
     if (paths && paths.executables) {
       const candidate = paths.executables + '/macmon';
       try {
@@ -131,7 +245,8 @@ async function resolveMacmonPath(app) {
     }
   } catch (_) {}
 
-  const devCandidate = tjs.cwd + '/executables/macmon';
+  const cwd = typeof tjs.cwd === 'function' ? tjs.cwd() : (tjs.cwd || '');
+  const devCandidate = cwd + '/executables/macmon';
   try {
     await tjs.stat(devCandidate);
     macmonBinPath = devCandidate;
@@ -156,22 +271,24 @@ async function runMacmon(app) {
 }
 
 async function runJunkScanOnce(app) {
-  if (isScanningJunk) return latestJunkScan;
-  isScanningJunk = true;
-  try {
-    const bin = await resolveMacmonPath(app);
-    if (!bin) return latestJunkScan;
-    const proc = tjs.spawn([bin, '--scan-junk'], { stdout: 'pipe', stderr: 'ignore' });
-    const text = proc.stdout ? await proc.stdout.text() : '';
-    await proc.wait();
-    if (text) {
-      latestJunkScan = JSON.parse(text);
-      lastJunkScanAt = Date.now();
-    }
-  } catch (_) {} finally {
-    isScanningJunk = false;
-  }
-  return latestJunkScan;
+  if (junkScanPromise) return junkScanPromise;
+  junkScanPromise = (async () => {
+    try {
+      const bin = await resolveMacmonPath(app);
+      if (!bin) return latestJunkScan;
+      const proc = tjs.spawn([bin, '--scan-junk'], { stdout: 'pipe', stderr: 'ignore' });
+      const text = proc.stdout ? await proc.stdout.text() : '';
+      await proc.wait();
+      if (text) {
+        latestJunkScan = JSON.parse(text);
+        lastJunkScanAt = Date.now();
+      }
+    } catch (_) {}
+    return latestJunkScan;
+  })().finally(() => {
+    junkScanPromise = null;
+  });
+  return junkScanPromise;
 }
 
 async function runDiskUsageScanOnce(app, targetPath = '', force = false) {
@@ -617,6 +734,7 @@ async function collectTelemetry(app) {
     desktopWidgetMode,
     compactMode,
     caffeinateActive,
+    autostart: autostartEnabled,
     cpu,
     memory,
     network,
@@ -645,9 +763,9 @@ function canSendAlert(key, cooldownMs = 300_000) {
 }
 
 function sendSmartNotification(app, title, body) {
-  try {
-    app.notify(title, body);
-  } catch (_) {}
+  // Disabled: background notifications distract the user and on macOS trigger
+  // Script Editor file picker when clicked. Latata.Hub stays peaceful and silent.
+  return;
 }
 
 function checkSmartAlerts(snapshot, app) {
@@ -764,8 +882,12 @@ function updateTrayMenu(app, snapshot) {
     const isEn = appLang === 'en';
     const cpuPct = Math.round(snapshot?.cpu?.totalPercent || 0);
     const ramPct = Math.round(snapshot?.memory?.percent || 0);
+    // U+2007 (FIGURE SPACE) has the exact same pixel width as digits (0-9) in macOS SF font.
+    // Fixed 2-digit padding prevents menu bar width jumping/jittering every second.
+    const cpuStr = String(Math.min(99, Math.max(0, cpuPct))).padStart(2, '\u2007');
+    const ramStr = String(Math.min(99, Math.max(0, ramPct))).padStart(2, '\u2007');
     app.tray.set({
-      title: `CPU ${cpuPct}% · RAM ${ramPct}%`,
+      title: `CPU ${cpuStr}% · RAM ${ramStr}%`,
       icon: 'sf:gauge.with.dots.needle.67percent',
       tooltip: 'Latata.Hub — macOS System Monitor',
       menu: [
@@ -786,6 +908,11 @@ function updateTrayMenu(app, snapshot) {
             ? (isEn ? 'Tooltips: ON' : 'Wskazówki (Tooltipy): ON')
             : (isEn ? 'Tooltips: OFF' : 'Wskazówki (Tooltipy): OFF'),
           checked: tooltipsEnabled,
+        },
+        {
+          id: 'toggle-autostart',
+          label: isEn ? 'Launch at Login' : 'Uruchamiaj przy starcie (Autostart)',
+          checked: autostartEnabled,
         },
         { separator: true },
         { id: 'quit', label: isEn ? 'Quit Latata.Hub' : 'Zakończ Latata.Hub' },
@@ -837,6 +964,22 @@ export const api = {
   async setTooltipsState({ enabled } = {}, app) {
     tooltipsEnabled = typeof enabled === 'boolean' ? enabled : !tooltipsEnabled;
     return { tooltipsEnabled };
+  },
+
+  async getAutostartState(_params, app) {
+    const enabled = await getLaunchAtLogin(app);
+    return { ok: true, enabled };
+  },
+
+  async toggleAutostart({ value } = {}, app) {
+    const target = typeof value === 'boolean' ? value : !autostartEnabled;
+    const res = await setLaunchAtLogin(app, target);
+    if (latestTelemetrySnapshot) {
+      latestTelemetrySnapshot.autostart = res.enabled;
+      updateTrayMenu(app, latestTelemetrySnapshot);
+    }
+    try { app.push('autostart-mode', { autostartEnabled: res.enabled }); } catch (_) {}
+    return res;
   },
 
   async snapLeft(_params, app) {
@@ -964,6 +1107,13 @@ export const api = {
     } catch (_) {
       return { ok: false, error: 'SPAWN_FAILED' };
     }
+  },
+
+  async openPrivacySettings(_params, app) {
+    try {
+      await tjs.spawn(['/usr/bin/open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'], { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => {});
+    } catch (_) {}
+    return { ok: true };
   },
 
   async cleanSystemJunk({ categories } = {}, app) {
@@ -1137,6 +1287,9 @@ export async function init(app) {
   } catch (_) {}
 
   await runJunkScanOnce(app).catch(() => {});
+  try {
+    autostartEnabled = await getLaunchAtLogin(app);
+  } catch (_) {}
 
   let tickCount = 0;
   let isTicking = false;
@@ -1185,6 +1338,13 @@ export async function onTray(id, app) {
   } else if (id === 'toggle-tooltips') {
     tooltipsEnabled = !tooltipsEnabled;
     app.push('tooltips-mode', { tooltipsEnabled });
+  } else if (id === 'toggle-autostart') {
+    await setLaunchAtLogin(app, !autostartEnabled);
+    if (latestTelemetrySnapshot) {
+      latestTelemetrySnapshot.autostart = autostartEnabled;
+      updateTrayMenu(app, latestTelemetrySnapshot);
+    }
+    try { app.push('autostart-mode', { autostartEnabled }); } catch (_) {}
   } else if (id === 'quit') {
     app.quit();
   }

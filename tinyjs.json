@@ -8,9 +8,12 @@
   "version": "1.4.0",
   "minTinyjsVersion": "0.70.3",
   "icon": "assets/icon.png",
+  "attribution": "Created by Wojciech Latacz — https://www.linkedin.com/in/wlatacz",
   "contextMenu": false,
   "permissions": {
-    "location": "Pozwala systemowi macOS wyświetlić nazwę podłączonej sieci Wi-Fi (SSID)."
+    "location": "Pozwala systemowi macOS wyświetlić nazwę podłączonej sieci Wi-Fi (SSID).",
+    "downloads": "Pozwala aplikacji analizować rozmiar plików w folderze Pobrane.",
+    "desktop": "Pozwala aplikacji analizować rozmiar plików na Biurku."
   },
   "chrome": {
     "frame": false,

@@ -230,8 +230,12 @@ const I18N = {
     pillLoadTitle: 'Poziom obciążenia systemu (Load Average 1m / 5m)',
     pillSwapTitle: 'Użycie pliku wymiany Swap',
     pillDockerTitle: 'Status środowiska deweloperskiego Docker',
+    pillAutostartTitle: 'Uruchamiaj automatycznie przy starcie systemu macOS (Launch at Login) — kliknij, aby przełączyć',
     dockerOn: 'Aktywny',
     dockerOff: 'Wył.',
+    autostartLabel: 'Auto:',
+    autostartOn: 'Wł.',
+    autostartOff: 'Wył.',
     homeCleanRamBtn: '🧹 Odśwież RAM i DNS',
     homeCleanRamTitle: 'Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM',
     homeProcsBtn: '⚡ Procesy',
@@ -359,6 +363,8 @@ const I18N = {
     diskFilesCols: 'Lokalizacja • Rozmiar',
     diskDirsEmpty: 'Brak podkatalogów w tej lokalizacji',
     diskFilesEmpty: 'Brak dużych plików w tej lokalizacji',
+    diskTccPermissionDenied: '🔒 Dostęp do tego folderu jest zablokowany przez zabezpieczenia macOS (TCC).',
+    diskTccBtn: '⚙️ Zezwól na dostęp w Ustawieniach systemowych',
     diskScanning: 'Skanowanie...',
     diskScanError: 'Błąd skanowania',
     revealInFinder: 'Pokaż w Finderze',
@@ -471,8 +477,12 @@ const I18N = {
     pillLoadTitle: 'System Load Average (1m / 5m)',
     pillSwapTitle: 'Swap file memory usage',
     pillDockerTitle: 'Docker development environment status',
+    pillAutostartTitle: 'Automatically launch Latata.Hub at macOS login — click to toggle',
     dockerOn: 'Active',
     dockerOff: 'Off',
+    autostartLabel: 'Auto:',
+    autostartOn: 'ON',
+    autostartOff: 'OFF',
     homeCleanRamBtn: '🧹 Flush RAM & DNS',
     homeCleanRamTitle: 'Flush DNS cache (dscacheutil) and update RAM buffers',
     homeProcsBtn: '⚡ Processes',
@@ -600,6 +610,8 @@ const I18N = {
     diskFilesCols: 'Location • Size',
     diskDirsEmpty: 'No subfolders in this location',
     diskFilesEmpty: 'No large files in this location',
+    diskTccPermissionDenied: '🔒 Access restricted by macOS privacy settings (TCC).',
+    diskTccBtn: '⚙️ Grant Access in System Settings',
     diskScanning: 'Scanning...',
     diskScanError: 'Scan error',
     revealInFinder: 'Reveal in Finder',
@@ -752,6 +764,8 @@ function setLanguage(lang) {
   if (sysPills[0]) sysPills[0].title = t('pillLoadTitle');
   if (sysPills[1]) sysPills[1].title = t('pillSwapTitle');
   if (sysPills[2]) sysPills[2].title = t('pillDockerTitle');
+  if ($('pillAutostart')) $('pillAutostart').title = t('pillAutostartTitle');
+  if ($('labelAutostart')) $('labelAutostart').textContent = t('autostartLabel');
 
   const btnHomeClean = $('btnHomeCleanRam');
   if (btnHomeClean) {
@@ -980,6 +994,31 @@ function renderDiskUsage(usage) {
   }
 
   const dirsEl = $('topDirsList');
+  const filesEl = $('topFilesList');
+
+  if (usage.permissionDenied) {
+    if (dirsEl) {
+      dirsEl.innerHTML = `
+        <div class="port-empty tcc-permission-box" style="padding: 16px 12px; text-align: center;">
+          <div style="margin-bottom: 10px; font-size: 11px; line-height: 1.4; color: #fca5a5;">${esc(t('diskTccPermissionDenied'))}</div>
+          <button class="tcc-grant-btn" type="button" id="btnOpenTccSettings">
+            ${esc(t('diskTccBtn'))}
+          </button>
+        </div>`;
+      const btn = $('btnOpenTccSettings');
+      if (btn) {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          tiny.api.call('openPrivacySettings').catch(() => {});
+        });
+      }
+    }
+    if (filesEl) {
+      filesEl.innerHTML = '';
+    }
+    return;
+  }
+
   if (dirsEl) {
     if (dirs.length === 0) {
       dirsEl.innerHTML = `<div class="port-empty">${esc(t('diskDirsEmpty'))}</div>`;
@@ -1012,7 +1051,6 @@ function renderDiskUsage(usage) {
     }
   }
 
-  const filesEl = $('topFilesList');
   if (filesEl) {
     if (files.length === 0) {
       filesEl.innerHTML = `<div class="port-empty">${esc(t('diskFilesEmpty'))}</div>`;
@@ -1851,7 +1889,7 @@ function renderTelemetry(snap) {
   if ($('homeLoadAvg')) {
     const loads = snap.cpu?.loadAvg || [];
     if (loads.length >= 2) {
-      $('homeLoadAvg').textContent = `${loads[0].toFixed(2)} / ${loads[1].toFixed(2)}`;
+      $('homeLoadAvg').textContent = `${loads[0].toFixed(1)} / ${loads[1].toFixed(1)}`;
     } else {
       $('homeLoadAvg').textContent = `${(snap.cpu?.totalPercent || 0).toFixed(1)}%`;
     }
@@ -1867,6 +1905,9 @@ function renderTelemetry(snap) {
     if (dkDot) {
       dkDot.className = dkRunning ? 'sys-dot dot-green' : 'sys-dot';
     }
+  }
+  if (typeof snap.autostart === 'boolean') {
+    updateAutostartUI(snap.autostart);
   }
 
   if (snap.junk) {
@@ -2372,6 +2413,19 @@ const TOOLTIP_DICTIONARY = [
     en: {
       title: '🟢 System IPC Connection',
       desc: 'Active bidirectional IPC communication with the txiki.js engine and native macmon helper.',
+    },
+  },
+  {
+    match: (el) => el.id === 'pillAutostart' || el.closest?.('#pillAutostart'),
+    pl: {
+      title: '🚀 Autostart (Launch at Login)',
+      desc: 'Automatycznie uruchamia Latata.Hub w pasku menu po zalogowaniu do systemu macOS.',
+      hint: 'Kliknij, aby przełączyć Autostart (Wł. / Wył.)',
+    },
+    en: {
+      title: '🚀 Launch at Login',
+      desc: 'Automatically launches Latata.Hub in your macOS menu bar on system login.',
+      hint: 'Click to toggle Launch at Login (ON / OFF)',
     },
   },
   {
@@ -3020,6 +3074,29 @@ if ($('btnHomeToggleTooltips')) {
   });
 }
 
+function updateAutostartUI(enabled) {
+  const isEnabled = Boolean(enabled);
+  if ($('valAutostart')) {
+    $('valAutostart').textContent = isEnabled ? t('autostartOn') : t('autostartOff');
+  }
+  const autoDot = $('dotAutostart');
+  if (autoDot) {
+    autoDot.className = isEnabled ? 'sys-dot dot-green' : 'sys-dot';
+  }
+}
+
+if ($('pillAutostart')) {
+  $('pillAutostart').addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    try {
+      const res = await tiny.api.call('toggleAutostart');
+      if (res?.ok) updateAutostartUI(res.enabled);
+    } catch (err) {
+      console.error('Toggle autostart failed:', err);
+    }
+  });
+}
+
 updateTooltipsToggleUI();
 
 async function boot() {
@@ -3041,6 +3118,10 @@ async function boot() {
 
   tiny.api.on('tooltips-mode', ({ tooltipsEnabled: val }) => {
     setTooltipsEnabled(val);
+  });
+
+  tiny.api.on('autostart-mode', ({ autostartEnabled }) => {
+    updateAutostartUI(autostartEnabled);
   });
 
   tiny.api.on('telemetry', (snap) => {

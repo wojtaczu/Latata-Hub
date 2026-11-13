@@ -10,7 +10,7 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshot-desktop.jpg" width="100%" alt="Latata.Hub on macOS Desktop" />
+  <img src="assets/screenshot-desktop-en.jpg" width="100%" alt="Latata.Hub on macOS Desktop" />
 </p>
 
 <p align="center">
