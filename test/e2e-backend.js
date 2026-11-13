@@ -218,6 +218,7 @@ async function runBackendApiTest() {
   assert(resBadReveal?.ok === false && resBadReveal?.error === 'INVALID_PATH', 'revealInFinder rejects path traversal attempts');
 
   assert(typeof mainMod.api.openExternal === 'function', 'api.openExternal is exported function');
+  assert(typeof mainMod.api.openPrivacySettings === 'function', 'api.openPrivacySettings is exported function');
   const resBadUrl = await mainMod.api.openExternal({ url: 'javascript:alert(1)' }, mockApp);
   assert(resBadUrl?.ok === false && resBadUrl?.error === 'INVALID_URL', 'openExternal safely rejects invalid schemes');
 
@@ -256,6 +257,8 @@ async function runConfigAndIntegrityTest() {
   assert(tinyConfig.name === 'latata-hub', `tinyjs.json name is 'latata-hub' (${tinyConfig.name})`);
   assert(tinyConfig.title === 'Latata.Hub', `tinyjs.json title is 'Latata.Hub' (${tinyConfig.title})`);
   assert(tinyConfig.id === 'app.tinyjs.latata.hub', `tinyjs.json id is 'app.tinyjs.latata.hub' (${tinyConfig.id})`);
+  assert(typeof tinyConfig.permissions?.downloads === 'string' && tinyConfig.permissions.downloads.length > 0, 'tinyjs.json declares permissions.downloads');
+  assert(typeof tinyConfig.permissions?.desktop === 'string' && tinyConfig.permissions.desktop.length > 0, 'tinyjs.json declares permissions.desktop');
 
   // 2. package.json contract
   const pkgRaw = await tjs.readFile(base + '/package.json');
@@ -273,10 +276,24 @@ async function runConfigAndIntegrityTest() {
   assert(!htmlText.includes('id="btnDiskUp"'), 'index.html has removed obsolete #btnDiskUp (Wstecz) button');
   assert(htmlText.includes('id="btnScanDiskUsage"'), 'index.html includes #btnScanDiskUsage refresh button');
 
-  // 4. Frontend CSS bugfix verification
+  // 4. Frontend CSS bugfix & JS syntax validation
   const cssRaw = await tjs.readFile(base + '/src/frontend/style.css');
   const cssText = dec.decode(cssRaw);
   assert(cssText.includes('.tooltip-hint[hidden],') && cssText.includes('display: none !important;'), 'style.css enforces display:none on hidden tooltip hints (prevents ghost slider)');
+
+  const appJsRaw = await tjs.readFile(base + '/src/frontend/app.js');
+  const appJsCode = dec.decode(appJsRaw);
+  let appJsSyntaxOk = true;
+  try {
+    new Function(appJsCode);
+  } catch (err) {
+    appJsSyntaxOk = false;
+    console.error('  SyntaxError in src/frontend/app.js:', err);
+  }
+  assert(appJsSyntaxOk, 'src/frontend/app.js passes strict JS syntax validation (no duplicate const/SyntaxError)');
+
+  const creditsStat = await tjs.stat(base + '/assets/Credits.html').catch(() => null);
+  assert(creditsStat !== null && (creditsStat.size || 0) > 100, 'assets/Credits.html exists');
 
   // 5. Native Bundle & Distribution Assets (verified if dist/ exists)
   const appStat = await tjs.stat(base + '/dist/Latata.Hub.app').catch(() => null);
@@ -284,6 +301,12 @@ async function runConfigAndIntegrityTest() {
     assert(appStat !== null, 'dist/Latata.Hub.app exists and is present');
     const helperStat = await tjs.stat(base + '/dist/Latata.Hub.app/Contents/Helpers/macmon').catch(() => null);
     assert(helperStat !== null, 'dist/Latata.Hub.app/Contents/Helpers/macmon is bundled inside .app');
+    const plistRaw = await tjs.readFile(base + '/dist/Latata.Hub.app/Contents/Info.plist');
+    const plistText = dec.decode(plistRaw);
+    assert(plistText.includes('NSDownloadsFolderUsageDescription'), 'dist Info.plist declares NSDownloadsFolderUsageDescription');
+    assert(plistText.includes('NSDesktopFolderUsageDescription'), 'dist Info.plist declares NSDesktopFolderUsageDescription');
+    const distCreditsStat = await tjs.stat(base + '/dist/Latata.Hub.app/Contents/Resources/Credits.html').catch(() => null);
+    assert(distCreditsStat !== null, 'dist/Latata.Hub.app/Contents/Resources/Credits.html is bundled inside .app');
     const zipStat = await tjs.stat(base + '/dist/Latata.Hub-macos-arm64.zip').catch(() => null);
     assert(zipStat !== null && (zipStat.size || 0) > 1000000, `dist/Latata.Hub-macos-arm64.zip exists (${((zipStat?.size || 0) / 1e6).toFixed(1)} MB)`);
   } else {
