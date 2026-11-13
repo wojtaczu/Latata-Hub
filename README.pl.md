@@ -5,7 +5,7 @@
 
 ---
 
-[English Version (README.md)](README.md) • **Polski**
+[English Version (README.md)](README.md) • **Polski** • [🌐 Strona projektu (latacz.online/hub)](https://latacz.online/hub/)
 
 ---
 
