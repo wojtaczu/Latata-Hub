@@ -2884,18 +2884,30 @@ function setRing(el, percent) {
   el.style.strokeDashoffset = offset.toFixed(2);
 }
 
-function fmtBytes(bytes, decimals = 1) {
+function fmtUnitBytes(bytes, decimals = 1, base = 1024) {
   const b = Number(bytes) || 0;
   if (b <= 0) return '0 B';
-  const k = 1024;
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.min(units.length - 1, Math.floor(Math.log(b) / Math.log(k)));
-  const val = b / Math.pow(k, i);
+  const i = Math.min(units.length - 1, Math.floor(Math.log(b) / Math.log(base)));
+  const val = b / Math.pow(base, i);
   return `${val.toFixed(i === 0 ? 0 : decimals)} ${units[i]}`;
+}
+
+function fmtBytes(bytes, decimals = 1) {
+  return fmtUnitBytes(bytes, decimals, 1024);
+}
+
+function fmtDiskBytes(bytes, decimals = 1) {
+  return fmtUnitBytes(bytes, decimals, 1000);
 }
 
 function fmtGB(bytes, decimals = 1) {
   const gb = (Number(bytes) || 0) / (1024 * 1024 * 1024);
+  return `${gb.toFixed(decimals)} GB`;
+}
+
+function fmtDiskGB(bytes, decimals = 1) {
+  const gb = (Number(bytes) || 0) / 1e9;
   return `${gb.toFixed(decimals)} GB`;
 }
 
@@ -3906,7 +3918,7 @@ function renderDiskUsage(usage) {
               </div>
             </div>
             <div class="proc-right">
-              <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+              <span class="proc-primary" style="color: ${valColor}">${esc(fmtDiskBytes(b, 1))}</span>
               <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(d.path)}" title="${esc(t('revealInFinder'))}: ${esc(d.shortPath)}">📂</button>
             </div>
           </div>`;
@@ -3926,7 +3938,7 @@ function renderDiskUsage(usage) {
           const barW = Math.min(100, Math.max(3, (b / maxFileB) * 100));
           const valColor = b >= 500 * 1024 * 1024 ? '#fda4af' : b >= 100 * 1024 * 1024 ? '#fcd34d' : '#d8b4fe';
           return `
-          <div class="proc-row" title="${esc(f.shortPath)} (${esc(fmtBytes(b, 2))})">
+          <div class="proc-row" title="${esc(f.shortPath)} (${esc(fmtDiskBytes(b, 2))})">
             <div class="proc-bar-bg disk-file-bar" style="width: ${barW.toFixed(1)}%"></div>
             <div class="proc-left">
               <span class="proc-rank">#${idx + 1}</span>
@@ -3937,7 +3949,7 @@ function renderDiskUsage(usage) {
               </div>
             </div>
             <div class="proc-right">
-              <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+              <span class="proc-primary" style="color: ${valColor}">${esc(fmtDiskBytes(b, 1))}</span>
               <button class="reveal-finder-btn" type="button" data-reveal-path="${esc(f.path)}" title="${esc(t('revealInFinder'))}: ${esc(f.shortPath)}">📂</button>
             </div>
           </div>`;
@@ -3978,18 +3990,18 @@ function renderJunkCleaner(junk) {
 
   const hudBadge = $('hudJunkBadge');
   if (hudBadge) {
-    hudBadge.textContent = totalBytes > 1024 * 1024 ? fmtBytes(totalBytes, 0) : t('hudCleaner');
+    hudBadge.textContent = totalBytes > 1000 * 1000 ? fmtDiskBytes(totalBytes, 0) : t('hudCleaner');
   }
 
   const totalBadge = $('junkTotalBadge');
   if (totalBadge) {
-    totalBadge.textContent = t('cleanerToRecover', fmtBytes(selectedBytes, 1));
-    totalBadge.className = selectedBytes > 50 * 1024 * 1024 ? 'card-pill warn' : 'card-pill good';
+    totalBadge.textContent = t('cleanerToRecover', fmtDiskBytes(selectedBytes, 1));
+    totalBadge.className = selectedBytes > 50 * 1000 * 1000 ? 'card-pill warn' : 'card-pill good';
   }
 
   const btnClean = $('btnCleanJunk');
   if (btnClean && !isCleaningOrScanning) {
-    btnClean.textContent = selectedBytes > 0 ? t('cleanerCleanBtnBytes', fmtBytes(selectedBytes, 0)) : t('cleanerCleanBtn');
+    btnClean.textContent = selectedBytes > 0 ? t('cleanerCleanBtnBytes', fmtDiskBytes(selectedBytes, 0)) : t('cleanerCleanBtn');
   }
 
   const listEl = $('junkCategoriesList');
@@ -4025,7 +4037,7 @@ function renderJunkCleaner(junk) {
           </div>
         </div>
         <div class="proc-right">
-          <span class="proc-primary" style="color: ${valColor}">${esc(fmtBytes(b, 1))}</span>
+          <span class="proc-primary" style="color: ${valColor}">${esc(fmtDiskBytes(b, 1))}</span>
         </div>
       </label>`;
     })
@@ -4317,7 +4329,7 @@ function renderTelemetry(snap) {
     $('hudDiskName').textContent = rawDiskName.length > 10 ? 'Dysk SSD' : rawDiskName;
   }
   if ($('hudDiskCap')) {
-    $('hudDiskCap').textContent = `${t('hudFree')}: ${fmtGB(disk?.free || 0, 1).replace(' GB', '')} / ${fmtGB(disk?.total || 0, 0)} (${diskPct.toFixed(0)}%)`;
+    $('hudDiskCap').textContent = `${t('hudFree')}: ${fmtDiskGB(disk?.free || 0, 1).replace(' GB', '')} / ${fmtDiskGB(disk?.total || 0, 0)} (${diskPct.toFixed(0)}%)`;
   }
   if ($('hudDiskBarFill')) {
     $('hudDiskBarFill').style.width = `${diskPct.toFixed(1)}%`;
@@ -4331,7 +4343,7 @@ function renderTelemetry(snap) {
   $('stripPing').textContent = network?.pingMs != null ? `${network.pingMs}ms` : '--';
   $('stripBattIcon').textContent = battery?.charging ? '⚡' : (battery?.plugged ? '🔌' : '🔋');
   $('stripBatt').textContent = battery?.percent != null ? `${battery.percent}%` : '--%';
-  $('stripDisk').textContent = fmtGB(disk?.free || 0, 0);
+  $('stripDisk').textContent = fmtDiskGB(disk?.free || 0, 0);
   const portsList = Array.isArray(dev?.ports) ? dev.ports : [];
   if ($('stripPorts')) {
     $('stripPorts').textContent = `${portsList.length}`;
@@ -4661,10 +4673,10 @@ function renderTelemetry(snap) {
   // 9. Disk SSD/HDD & System Junk Cleaner Card
   $('diskName').textContent = disk?.name || 'Macintosh HD';
   $('diskPctBadge').textContent = `${(disk?.percent || 0).toFixed(1)}% ${t('diskOccupied')}`;
-  $('diskFreeMain').innerHTML = `${esc(fmtGB(disk?.free || 0, 1).replace(' GB', ''))} <small>${t('diskFreeSuffix')}</small>`;
+  $('diskFreeMain').innerHTML = `${esc(fmtDiskGB(disk?.free || 0, 1).replace(' GB', ''))} <small>${t('diskFreeSuffix')}</small>`;
   const purgeableBytes = Number(disk?.purgeable) || 0;
-  const purgeableTxt = purgeableBytes > 100 * 1024 * 1024 ? ` • ${t('diskPurgeableBuf')}: ${fmtGB(purgeableBytes, 1)}` : '';
-  $('diskSubLine').textContent = `${t('diskOccupiedLabel')}: ${fmtGB(disk?.used || 0, 1)} ${t('hudFrom')} ${fmtGB(disk?.total || 0, 1)}${purgeableTxt}`;
+  const purgeableTxt = purgeableBytes > 100 * 1000 * 1000 ? ` • ${t('diskPurgeableBuf')}: ${fmtDiskGB(purgeableBytes, 1)}` : '';
+  $('diskSubLine').textContent = `${t('diskOccupiedLabel')}: ${fmtDiskGB(disk?.used || 0, 1)} ${t('hudFrom')} ${fmtDiskGB(disk?.total || 0, 1)}${purgeableTxt}`;
   $('diskTempVal').textContent = temps?.ssd > 0 ? `${temps.ssd.toFixed(1)}°C` : '--°C';
   $('sysUptimeVal').textContent = fmtUptime(cpu?.uptime || 0);
   const usedBarPct = Math.min(100, Math.max(0, disk?.percent || 0));
@@ -4688,11 +4700,11 @@ function renderTelemetry(snap) {
             <span class="proc-icon-fallback">${icon}</span>
             <div class="junk-text-wrap">
               <span class="proc-name">${esc(v.name)}</span>
-              <span class="junk-sub">${esc(kindLabel)} • ${t('diskOccupiedLabel')}: ${fmtGB(v.used, 1)} / ${fmtGB(v.total, 1)} (${vPct}%)</span>
+              <span class="junk-sub">${esc(kindLabel)} • ${t('diskOccupiedLabel')}: ${fmtDiskGB(v.used, 1)} / ${fmtDiskGB(v.total, 1)} (${vPct}%)</span>
             </div>
           </div>
           <div class="proc-right">
-            <span class="proc-primary" style="color: #d8b4fe">${fmtGB(v.free, 1)} ${t('diskFreeVolume')}</span>
+            <span class="proc-primary" style="color: #d8b4fe">${fmtDiskGB(v.free, 1)} ${t('diskFreeVolume')}</span>
           </div>
         </div>`;
       })
@@ -4892,7 +4904,7 @@ if ($('btnScanJunk')) {
       if (scan) {
         renderJunkCleaner(scan);
         if (status) {
-          status.textContent = t('cleanerScanFinished', fmtBytes(scan.totalBytes || 0, 1));
+          status.textContent = t('cleanerScanFinished', fmtDiskBytes(scan.totalBytes || 0, 1));
         }
       }
     } catch (_) {
@@ -4971,7 +4983,7 @@ if ($('btnCleanJunk')) {
         const items = Number(res?.removedItems) || 0;
         status.textContent =
           freed > 0
-            ? t('cleanerSuccess', fmtBytes(freed, 1), items)
+            ? t('cleanerSuccess', fmtDiskBytes(freed, 1), items)
             : t('cleanerSuccessNoBytes', items);
       }
     } catch (_) {
