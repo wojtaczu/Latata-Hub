@@ -123,6 +123,13 @@ async function runBackendApiTest() {
     tray: {
       set: () => true,
     },
+    launchAtLogin: {
+      get: async () => (mockApp._autostart ? 'enabled' : 'disabled'),
+      set: async (val) => {
+        mockApp._autostart = Boolean(val);
+        return mockApp._autostart ? 'enabled' : 'disabled';
+      },
+    },
     push: () => true,
   };
 
@@ -224,6 +231,27 @@ async function runBackendApiTest() {
 
   const resBadKill = await mainMod.api.killProcess({ pid: 1 }, mockApp);
   assert(resBadKill?.ok === false && resBadKill?.error === 'INVALID_PID', 'killProcess safely rejects PID <= 1');
+
+  const resEmptyClean = await mainMod.api.cleanSystemJunk({}, mockApp);
+  assert(resEmptyClean?.ok === false && resEmptyClean?.error === 'EMPTY_CATEGORIES', 'cleanSystemJunk rejects empty categories (no default wipe-all)');
+
+  const resInvalidClean = await mainMod.api.cleanSystemJunk({ categories: ['unknown_cat'] }, mockApp);
+  assert(resInvalidClean?.ok === false && resInvalidClean?.error === 'INVALID_CATEGORIES', 'cleanSystemJunk rejects unknown categories');
+
+  const resOutDisk = await mainMod.api.scanDiskUsage({ path: '/etc' }, mockApp);
+  assert(resOutDisk?.ok === false && resOutDisk?.error === 'INVALID_PATH', 'scanDiskUsage rejects out-of-scope system paths (/etc)');
+
+  const [concScanA, concScanB] = await Promise.all([
+    mainMod.api.scanDiskUsage({ path: '/Applications' }, mockApp),
+    mainMod.api.scanDiskUsage({ path: '/Applications' }, mockApp),
+  ]);
+  assert(concScanA !== null && concScanA === concScanB, 'scanDiskUsage deduplicates concurrent in-flight scans for the same path');
+
+  const noArgCleanProc = tjs.spawn([(tjs.cwd || '.') + '/executables/macmon', '--clean-junk'], { stdout: 'pipe', stderr: 'ignore' });
+  const noArgCleanOut = await noArgCleanProc.stdout.text();
+  await noArgCleanProc.wait();
+  const noArgCleanData = JSON.parse(noArgCleanOut || '{}');
+  assert(noArgCleanData?.ok === false && noArgCleanData?.error === 'INVALID_CATEGORIES', 'Native macmon --clean-junk without args refuses to wipe all categories');
 
   // Verify setLanguage optimization with cached snapshot
   const resLang = await mainMod.api.setLanguage({ lang: 'en' }, mockApp);

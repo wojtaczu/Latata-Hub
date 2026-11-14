@@ -755,16 +755,20 @@ int main(int argc, const char * argv[]) {
         }
 
         if (argc >= 2 && strcmp(argv[1], "--clean-junk") == 0) {
+            NSSet *allowed = [NSSet setWithArray:@[@"caches", @"logs", @"trash", @"dev", @"temp"]];
             NSMutableSet *sel = [NSMutableSet set];
-            if (argc == 2) {
-                [sel addObjectsFromArray:@[@"caches", @"logs", @"trash", @"dev", @"temp"]];
-            } else {
-                for (int i = 2; i < argc; i++) {
-                    NSString *arg = [NSString stringWithUTF8String:argv[i]];
-                    if (arg.length > 0) [sel addObject:arg];
+            BOOL invalidArg = (argc < 3);
+            for (int i = 2; i < argc; i++) {
+                NSString *arg = [NSString stringWithUTF8String:argv[i]];
+                if (!arg || ![allowed containsObject:arg]) {
+                    invalidArg = YES;
+                    break;
                 }
+                [sel addObject:arg];
             }
-            NSDictionary *res = cleanSystemJunk(sel);
+            NSDictionary *res = (!invalidArg && sel.count > 0)
+                ? cleanSystemJunk(sel)
+                : @{@"ok": @(NO), @"error": @"INVALID_CATEGORIES"};
             NSData *d = [NSJSONSerialization dataWithJSONObject:res options:0 error:nil];
             if (d) {
                 fwrite(d.bytes, 1, d.length, stdout);

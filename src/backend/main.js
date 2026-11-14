@@ -23,8 +23,10 @@ let lastJunkScanAt = 0;
 let junkScanPromise = null;
 let latestDiskUsage = null;
 let lastDiskUsageAt = 0;
-let isScanningDiskUsage = false;
+const diskUsageInFlight = new Map();
+let diskScanSeq = 0;
 let currentDiskUsagePath = '';
+const VALID_JUNK_CATEGORIES = new Set(['caches', 'logs', 'trash', 'dev', 'temp']);
 let tooltipsEnabled = true;
 let appLang = 'pl';
 let autostartEnabled = false;
@@ -122,8 +124,8 @@ async function setLaunchAtLogin(app, enabled) {
         make login item at end with properties {path:"${safeAppPath}", hidden:false, name:"Latata.Hub"}
       end tell`;
       const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
-      await proc.wait();
-      statusSet = true;
+      const st = await proc.wait();
+      if (st?.exit_status === 0) statusSet = true;
     } else {
       const sc = `tell application "System Events"
         try
@@ -131,10 +133,14 @@ async function setLaunchAtLogin(app, enabled) {
         end try
       end tell`;
       const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
-      await proc.wait();
-      statusSet = true;
+      const st = await proc.wait();
+      if (st?.exit_status === 0) statusSet = true;
     }
   } catch (_) {}
+
+  if (!statusSet) {
+    return { ok: false, enabled: autostartEnabled, error: 'AUTOSTART_FAILED' };
+  }
 
   autostartEnabled = target;
   try {
@@ -293,23 +299,37 @@ async function runJunkScanOnce(app) {
 }
 
 async function runDiskUsageScanOnce(app, targetPath = '', force = false) {
-  if (isScanningDiskUsage && !force) return latestDiskUsage;
-  isScanningDiskUsage = true;
-  try {
-    const bin = await resolveMacmonPath(app);
-    if (!bin) return latestDiskUsage;
-    const args = targetPath ? [bin, '--scan-disk', String(targetPath)] : [bin, '--scan-disk'];
-    const proc = tjs.spawn(args, { stdout: 'pipe', stderr: 'ignore' });
-    const text = proc.stdout ? await proc.stdout.text() : '';
-    await proc.wait();
-    if (text) {
-      latestDiskUsage = JSON.parse(text);
-      lastDiskUsageAt = Date.now();
-    }
-  } catch (_) {} finally {
-    isScanningDiskUsage = false;
+  const key = String(targetPath || '');
+  if (diskUsageInFlight.has(key)) {
+    return diskUsageInFlight.get(key);
   }
-  return latestDiskUsage;
+  if (diskUsageInFlight.size > 0 && !force) {
+    return latestDiskUsage;
+  }
+  const seq = ++diskScanSeq;
+  const p = (async () => {
+    let parsed = null;
+    try {
+      const bin = await resolveMacmonPath(app);
+      if (!bin) return latestDiskUsage;
+      const args = key ? [bin, '--scan-disk', key] : [bin, '--scan-disk'];
+      const proc = tjs.spawn(args, { stdout: 'pipe', stderr: 'ignore' });
+      const text = proc.stdout ? await proc.stdout.text() : '';
+      await proc.wait();
+      if (text) {
+        parsed = JSON.parse(text);
+        if (seq === diskScanSeq) {
+          latestDiskUsage = parsed;
+          lastDiskUsageAt = Date.now();
+        }
+      }
+    } catch (_) {}
+    return parsed || latestDiskUsage;
+  })().finally(() => {
+    diskUsageInFlight.delete(key);
+  });
+  diskUsageInFlight.set(key, p);
+  return p;
 }
 
 async function resolveMissingIcons(paths, app) {
@@ -1080,9 +1100,23 @@ export const api = {
   },
 
   async scanDiskUsage({ path = '' } = {}, app) {
-    const rawPath = path ? String(path).replace(/\\/g, '/') : '';
+    const rawPath = path ? String(path).replace(/\\/g, '/').trim() : '';
     if (rawPath.includes('\0') || rawPath.split('/').includes('..')) {
       return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
+    }
+    if (rawPath) {
+      const home = tjs.env.HOME || '';
+      const allowed =
+        rawPath === '~' ||
+        rawPath.startsWith('~/') ||
+        (home && (rawPath === home || rawPath.startsWith(home + '/'))) ||
+        rawPath === '/Applications' ||
+        rawPath.startsWith('/Applications/') ||
+        rawPath === '/Volumes' ||
+        rawPath.startsWith('/Volumes/');
+      if (!allowed) {
+        return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
+      }
     }
     currentDiskUsagePath = rawPath;
     const scan = await runDiskUsageScanOnce(app, currentDiskUsagePath, true);
@@ -1118,13 +1152,17 @@ export const api = {
   },
 
   async cleanSystemJunk({ categories } = {}, app) {
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return { ok: false, error: 'EMPTY_CATEGORIES' };
+    }
+    const cats = categories.map((c) => String(c)).filter((c) => VALID_JUNK_CATEGORIES.has(c));
+    if (cats.length === 0 || cats.length !== categories.length) {
+      return { ok: false, error: 'INVALID_CATEGORIES' };
+    }
     const bin = await resolveMacmonPath(app);
     if (!bin) {
       return { ok: false, error: 'NO_MACMON' };
     }
-    const cats = Array.isArray(categories) && categories.length > 0
-      ? categories.map((c) => String(c))
-      : ['caches', 'logs', 'trash', 'dev', 'temp'];
     try {
       const proc = tjs.spawn([bin, '--clean-junk', ...cats], {
         stdout: 'pipe',
@@ -1183,10 +1221,20 @@ export const api = {
       return { busy: true };
     }
     isSpeedtesting = true;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = setTimeout(() => {
+      try { controller?.abort(); } catch (_) {}
+    }, 15000);
     try {
       app.push('speedtest-progress', { phase: 'ping', progress: 10 });
       const tPing0 = Date.now();
-      await fetch('https://speed.cloudflare.com/__down?bytes=0', { cache: 'no-store' });
+      const pingResp = await fetch('https://speed.cloudflare.com/__down?bytes=0', {
+        cache: 'no-store',
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      if (!pingResp.ok) {
+        throw new Error('HTTP ' + pingResp.status);
+      }
       const latencyMs = Math.max(1, Date.now() - tPing0);
 
       app.push('speedtest-progress', {
@@ -1199,6 +1247,7 @@ export const api = {
       const tStart = Date.now();
       const resp = await fetch(`https://speed.cloudflare.com/__down?bytes=${targetBytes}`, {
         cache: 'no-store',
+        ...(controller ? { signal: controller.signal } : {}),
       });
       if (!resp.ok || !resp.body) {
         throw new Error('HTTP ' + resp.status);
@@ -1256,6 +1305,7 @@ export const api = {
       });
       return { ok: false, error: msg };
     } finally {
+      clearTimeout(timeoutId);
       isSpeedtesting = false;
     }
   },

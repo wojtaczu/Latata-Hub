@@ -2111,6 +2111,9 @@ if ($('btnCleanJunk')) {
     if (fill) fill.style.width = '60%';
     try {
       const res = await tiny.api.call('cleanSystemJunk', { categories });
+      if (!res?.ok) {
+        throw new Error(res?.error || 'CLEAN_FAILED');
+      }
       if (res?.scan) {
         renderJunkCleaner(res.scan);
       }
@@ -2159,7 +2162,7 @@ if ($('btnCleanRam')) {
 }
 
 // Toggle Always on Top ('Przypnij' vs Desktop Widget)
-$('btnPin').addEventListener('click', async () => {
+$('btnPin')?.addEventListener('click', async () => {
   const res = await tiny.api.call('toggleWidgetLayer');
   const isAlwaysOnTop = !res.desktopWidgetMode;
   try {
@@ -2169,7 +2172,7 @@ $('btnPin').addEventListener('click', async () => {
 });
 
 // Toggle Compact (348x268) vs Expanded (348x660)
-$('btnCompact').addEventListener('click', async () => {
+$('btnCompact')?.addEventListener('click', async () => {
   const res = await tiny.api.call('toggleCompactMode');
   applyWindowModeUI(undefined, res.compactMode);
 });
@@ -2260,7 +2263,7 @@ if ($('btnCleanRamAlt')) {
 }
 
 // One-Click Kill Process / Port Handler (delegated on cardsContainer)
-$('cardsContainer').addEventListener('click', async (ev) => {
+$('cardsContainer')?.addEventListener('click', async (ev) => {
   const btn = ev.target.closest('[data-kill-pid]');
   if (!btn) return;
   ev.stopPropagation();
@@ -2295,7 +2298,7 @@ $('cardsContainer').addEventListener('click', async (ev) => {
 });
 
 // Speedtest button & progress events
-$('btnSpeedtest').addEventListener('click', async () => {
+$('btnSpeedtest')?.addEventListener('click', async () => {
   const btn = $('btnSpeedtest');
   btn.disabled = true;
   btn.textContent = t('speedtestRunning');
