@@ -30,6 +30,45 @@ const VALID_JUNK_CATEGORIES = new Set(['caches', 'logs', 'trash', 'dev', 'temp']
 let tooltipsEnabled = true;
 let appLang = 'pl';
 let autostartEnabled = false;
+let autostartRequiresApproval = false;
+
+function isAllowedUserPath(rawPath) {
+  if (!rawPath || typeof rawPath !== 'string') return false;
+  const std = String(rawPath).replace(/\\/g, '/').trim();
+  if (!std || std.includes('\0') || std.split('/').includes('..')) {
+    return false;
+  }
+  const home = tjs.env.HOME || '';
+  return (
+    std === '~' ||
+    std.startsWith('~/') ||
+    (Boolean(home) && (std === home || std.startsWith(home + '/'))) ||
+    std === '/Applications' ||
+    std.startsWith('/Applications/') ||
+    std === '/Volumes' ||
+    std.startsWith('/Volumes/')
+  );
+}
+
+const SPEEDTEST_PING_TIMEOUT_MS = 5000;
+const SPEEDTEST_DOWNLOAD_TIMEOUT_MS = 15000;
+
+function withStageTimeout(workFn, timeoutMs, timeoutMessage = 'TIMEOUT') {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  let timer = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      try { controller?.abort(); } catch (_) {}
+      reject(new Error(timeoutMessage));
+    }, timeoutMs);
+  });
+  return Promise.race([
+    Promise.resolve().then(() => workFn(controller ? controller.signal : undefined)),
+    timeoutPromise,
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
 
 async function getActualAppBundlePath() {
   const exe = tjs.exePath || '';
@@ -57,13 +96,20 @@ async function getLaunchAtLogin(app) {
   try {
     if (app?.launchAtLogin?.get) {
       const st = await app.launchAtLogin.get();
-      if (st === 'enabled' || st === 'requires-approval') {
+      if (st === 'enabled') {
         autostartEnabled = true;
-        return true;
+        autostartRequiresApproval = false;
+        return { enabled: true, requiresApproval: false, status: 'enabled' };
+      }
+      if (st === 'requires-approval') {
+        autostartEnabled = false;
+        autostartRequiresApproval = true;
+        return { enabled: false, requiresApproval: true, status: 'requires-approval' };
       }
       if (st === 'disabled') {
         autostartEnabled = false;
-        return false;
+        autostartRequiresApproval = false;
+        return { enabled: false, requiresApproval: false, status: 'disabled' };
       }
     }
   } catch (_) {}
@@ -76,11 +122,13 @@ async function getLaunchAtLogin(app) {
     await proc.wait();
     if (text === 'true') {
       autostartEnabled = true;
-      return true;
+      autostartRequiresApproval = false;
+      return { enabled: true, requiresApproval: false, status: 'enabled' };
     }
     if (text === 'false') {
       autostartEnabled = false;
-      return false;
+      autostartRequiresApproval = false;
+      return { enabled: false, requiresApproval: false, status: 'disabled' };
     }
   } catch (_) {}
 
@@ -88,65 +136,98 @@ async function getLaunchAtLogin(app) {
     const val = await app?.store?.get('autostart_enabled');
     if (typeof val === 'boolean') {
       autostartEnabled = val;
-      return val;
+      autostartRequiresApproval = false;
+      return { enabled: val, requiresApproval: false, status: val ? 'enabled' : 'disabled' };
     }
   } catch (_) {}
-  return autostartEnabled;
+  return {
+    enabled: autostartEnabled,
+    requiresApproval: autostartRequiresApproval,
+    status: autostartRequiresApproval ? 'requires-approval' : (autostartEnabled ? 'enabled' : 'disabled'),
+  };
 }
 
 async function setLaunchAtLogin(app, enabled) {
   const target = Boolean(enabled);
   let statusSet = false;
+  let requiresApproval = false;
+  let resolvedEnabled = autostartEnabled;
 
   // 1. Native SMAppService (works when app is packaged and installed in /Applications)
   try {
     if (app?.launchAtLogin?.set) {
       const st = await app.launchAtLogin.set(target);
-      if (st === 'enabled' || st === 'requires-approval') {
-        autostartEnabled = true;
+      if (st === 'enabled') {
+        resolvedEnabled = true;
+        requiresApproval = false;
+        statusSet = true;
+      } else if (st === 'requires-approval') {
+        resolvedEnabled = false;
+        requiresApproval = true;
         statusSet = true;
       } else if (st === 'disabled') {
-        autostartEnabled = false;
+        resolvedEnabled = false;
+        requiresApproval = false;
         statusSet = true;
       }
     }
   } catch (_) {}
 
-  // 2. AppleScript / System Events Login Item (works across all macOS paths, including dist/)
-  try {
-    const appPath = await getActualAppBundlePath();
-    const safeAppPath = String(appPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    if (target) {
-      const sc = `tell application "System Events"
-        try
-          delete (every login item whose name is "Latata.Hub")
-        end try
-        make login item at end with properties {path:"${safeAppPath}", hidden:false, name:"Latata.Hub"}
-      end tell`;
-      const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
-      const st = await proc.wait();
-      if (st?.exit_status === 0) statusSet = true;
-    } else {
-      const sc = `tell application "System Events"
-        try
-          delete (every login item whose name is "Latata.Hub")
-        end try
-      end tell`;
-      const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
-      const st = await proc.wait();
-      if (st?.exit_status === 0) statusSet = true;
-    }
-  } catch (_) {}
-
-  if (!statusSet) {
-    return { ok: false, enabled: autostartEnabled, error: 'AUTOSTART_FAILED' };
+  // 2. AppleScript / System Events Login Item (fallback when SMAppService is unavailable or failed)
+  if (!statusSet && !app?.launchAtLogin?.disableFallback) {
+    try {
+      const appPath = await getActualAppBundlePath();
+      const safeAppPath = String(appPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      if (target) {
+        const sc = `tell application "System Events"
+          try
+            delete (every login item whose name is "Latata.Hub")
+          end try
+          make login item at end with properties {path:"${safeAppPath}", hidden:false, name:"Latata.Hub"}
+        end tell`;
+        const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
+        const st = await proc.wait();
+        if (st?.exit_status === 0) {
+          statusSet = true;
+          resolvedEnabled = true;
+        }
+      } else {
+        const sc = `tell application "System Events"
+          try
+            delete (every login item whose name is "Latata.Hub")
+          end try
+        end tell`;
+        const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
+        const st = await proc.wait();
+        if (st?.exit_status === 0) {
+          statusSet = true;
+          resolvedEnabled = false;
+        }
+      }
+    } catch (_) {}
   }
 
-  autostartEnabled = target;
+  if (!statusSet) {
+    return {
+      ok: false,
+      enabled: autostartEnabled,
+      requiresApproval: autostartRequiresApproval,
+      status: autostartRequiresApproval ? 'requires-approval' : (autostartEnabled ? 'enabled' : 'disabled'),
+      error: 'AUTOSTART_FAILED',
+    };
+  }
+
+  autostartEnabled = resolvedEnabled;
+  autostartRequiresApproval = requiresApproval;
   try {
     await app?.store?.set('autostart_enabled', autostartEnabled);
   } catch (_) {}
-  return { ok: true, enabled: autostartEnabled };
+  return {
+    ok: true,
+    enabled: autostartEnabled,
+    requiresApproval: autostartRequiresApproval,
+    status: autostartRequiresApproval ? 'requires-approval' : (autostartEnabled ? 'enabled' : 'disabled'),
+  };
 }
 const caseBatteryCache = new Map();
 
@@ -756,6 +837,7 @@ async function collectTelemetry(app) {
     compactMode,
     caffeinateActive,
     autostart: autostartEnabled,
+    autostartRequiresApproval,
     cpu,
     memory,
     network,
@@ -988,8 +1070,8 @@ export const api = {
   },
 
   async getAutostartState(_params, app) {
-    const enabled = await getLaunchAtLogin(app);
-    return { ok: true, enabled };
+    const state = await getLaunchAtLogin(app);
+    return { ok: true, ...state };
   },
 
   async toggleAutostart({ value } = {}, app) {
@@ -997,9 +1079,15 @@ export const api = {
     const res = await setLaunchAtLogin(app, target);
     if (latestTelemetrySnapshot) {
       latestTelemetrySnapshot.autostart = res.enabled;
+      latestTelemetrySnapshot.autostartRequiresApproval = Boolean(res.requiresApproval);
       updateTrayMenu(app, latestTelemetrySnapshot);
     }
-    try { app.push('autostart-mode', { autostartEnabled: res.enabled }); } catch (_) {}
+    try {
+      app.push('autostart-mode', {
+        autostartEnabled: res.enabled,
+        requiresApproval: Boolean(res.requiresApproval),
+      });
+    } catch (_) {}
     return res;
   },
 
@@ -1104,19 +1192,8 @@ export const api = {
     if (rawPath.includes('\0') || rawPath.split('/').includes('..')) {
       return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
     }
-    if (rawPath) {
-      const home = tjs.env.HOME || '';
-      const allowed =
-        rawPath === '~' ||
-        rawPath.startsWith('~/') ||
-        (home && (rawPath === home || rawPath.startsWith(home + '/'))) ||
-        rawPath === '/Applications' ||
-        rawPath.startsWith('/Applications/') ||
-        rawPath === '/Volumes' ||
-        rawPath.startsWith('/Volumes/');
-      if (!allowed) {
-        return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
-      }
+    if (rawPath && !isAllowedUserPath(rawPath)) {
+      return { ok: false, error: 'INVALID_PATH', topDirs: [], topFiles: [] };
     }
     currentDiskUsagePath = rawPath;
     const scan = await runDiskUsageScanOnce(app, currentDiskUsagePath, true);
@@ -1125,8 +1202,8 @@ export const api = {
 
   async revealInFinder({ path = '' } = {}, app) {
     if (!path) return { ok: false, error: 'EMPTY_PATH' };
-    const std = String(path).replace(/\\/g, '/');
-    if (std.includes('\0') || std.split('/').includes('..') || (!std.startsWith('/') && !std.startsWith('~'))) {
+    const std = String(path).replace(/\\/g, '/').trim();
+    if (!isAllowedUserPath(std)) {
       return { ok: false, error: 'INVALID_PATH' };
     }
     const bin = await resolveMacmonPath(app);
@@ -1216,26 +1293,30 @@ export const api = {
     }
   },
 
-  async runSpeedtest(_params, app) {
+  async runSpeedtest({ pingTimeoutMs, downloadTimeoutMs } = {}, app) {
     if (isSpeedtesting) {
       return { busy: true };
     }
     isSpeedtesting = true;
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timeoutId = setTimeout(() => {
-      try { controller?.abort(); } catch (_) {}
-    }, 15000);
+    const pingLimit = Number(pingTimeoutMs) > 0 ? Number(pingTimeoutMs) : SPEEDTEST_PING_TIMEOUT_MS;
+    const downloadLimit = Number(downloadTimeoutMs) > 0 ? Number(downloadTimeoutMs) : SPEEDTEST_DOWNLOAD_TIMEOUT_MS;
     try {
       app.push('speedtest-progress', { phase: 'ping', progress: 10 });
-      const tPing0 = Date.now();
-      const pingResp = await fetch('https://speed.cloudflare.com/__down?bytes=0', {
-        cache: 'no-store',
-        ...(controller ? { signal: controller.signal } : {}),
-      });
-      if (!pingResp.ok) {
-        throw new Error('HTTP ' + pingResp.status);
-      }
-      const latencyMs = Math.max(1, Date.now() - tPing0);
+      const latencyMs = await withStageTimeout(
+        async (pingSignal) => {
+          const tPing0 = Date.now();
+          const pingResp = await fetch('https://speed.cloudflare.com/__down?bytes=0', {
+            cache: 'no-store',
+            ...(pingSignal ? { signal: pingSignal } : {}),
+          });
+          if (!pingResp.ok) {
+            throw new Error('HTTP ' + pingResp.status);
+          }
+          return Math.max(1, Date.now() - tPing0);
+        },
+        pingLimit,
+        'PING_TIMEOUT'
+      );
 
       app.push('speedtest-progress', {
         phase: 'download',
@@ -1244,41 +1325,50 @@ export const api = {
       });
 
       const targetBytes = 15_000_000;
-      const tStart = Date.now();
-      const resp = await fetch(`https://speed.cloudflare.com/__down?bytes=${targetBytes}`, {
-        cache: 'no-store',
-        ...(controller ? { signal: controller.signal } : {}),
-      });
-      if (!resp.ok || !resp.body) {
-        throw new Error('HTTP ' + resp.status);
-      }
-
-      const reader = resp.body.getReader();
-      let received = 0;
-      let lastPush = Date.now();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) {
-          received += value.byteLength;
-          const now = Date.now();
-          if (now - lastPush > 140) {
-            const elapsedSec = Math.max(0.05, (now - tStart) / 1000);
-            const currentMbps = Math.round(((received * 8) / elapsedSec / 1_000_000) * 10) / 10;
-            const pct = Math.min(95, Math.round(25 + (received / targetBytes) * 70));
-            app.push('speedtest-progress', {
-              phase: 'download',
-              progress: pct,
-              downloadMbps: currentMbps,
-              latencyMs,
-            });
-            lastPush = now;
+      const { received, totalSec } = await withStageTimeout(
+        async (dlSignal) => {
+          const tStart = Date.now();
+          const resp = await fetch(`https://speed.cloudflare.com/__down?bytes=${targetBytes}`, {
+            cache: 'no-store',
+            ...(dlSignal ? { signal: dlSignal } : {}),
+          });
+          if (!resp.ok || !resp.body) {
+            throw new Error('HTTP ' + resp.status);
           }
-        }
-      }
 
-      const totalSec = Math.max(0.05, (Date.now() - tStart) / 1000);
+          const reader = resp.body.getReader();
+          let bytesReceived = 0;
+          let lastPush = Date.now();
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              bytesReceived += value.byteLength;
+              const now = Date.now();
+              if (now - lastPush > 140) {
+                const elapsedSec = Math.max(0.05, (now - tStart) / 1000);
+                const currentMbps = Math.round(((bytesReceived * 8) / elapsedSec / 1_000_000) * 10) / 10;
+                const pct = Math.min(95, Math.round(25 + (bytesReceived / targetBytes) * 70));
+                app.push('speedtest-progress', {
+                  phase: 'download',
+                  progress: pct,
+                  downloadMbps: currentMbps,
+                  latencyMs,
+                });
+                lastPush = now;
+              }
+            }
+          }
+          return {
+            received: bytesReceived,
+            totalSec: Math.max(0.05, (Date.now() - tStart) / 1000),
+          };
+        },
+        downloadLimit,
+        'DOWNLOAD_TIMEOUT'
+      );
+
       const finalMbps = Math.round(((received * 8) / totalSec / 1_000_000) * 10) / 10;
       const finalMBps = Math.round((received / totalSec / 1_000_000) * 100) / 100;
 
@@ -1305,7 +1395,6 @@ export const api = {
       });
       return { ok: false, error: msg };
     } finally {
-      clearTimeout(timeoutId);
       isSpeedtesting = false;
     }
   },
@@ -1339,7 +1428,9 @@ export async function init(app) {
 
   await runJunkScanOnce(app).catch(() => {});
   try {
-    autostartEnabled = await getLaunchAtLogin(app);
+    const st = await getLaunchAtLogin(app);
+    autostartEnabled = Boolean(st?.enabled);
+    autostartRequiresApproval = Boolean(st?.requiresApproval);
   } catch (_) {}
 
   let tickCount = 0;
@@ -1390,12 +1481,18 @@ export async function onTray(id, app) {
     tooltipsEnabled = !tooltipsEnabled;
     app.push('tooltips-mode', { tooltipsEnabled });
   } else if (id === 'toggle-autostart') {
-    await setLaunchAtLogin(app, !autostartEnabled);
+    const res = await setLaunchAtLogin(app, !autostartEnabled);
     if (latestTelemetrySnapshot) {
-      latestTelemetrySnapshot.autostart = autostartEnabled;
+      latestTelemetrySnapshot.autostart = res.enabled;
+      latestTelemetrySnapshot.autostartRequiresApproval = Boolean(res.requiresApproval);
       updateTrayMenu(app, latestTelemetrySnapshot);
     }
-    try { app.push('autostart-mode', { autostartEnabled }); } catch (_) {}
+    try {
+      app.push('autostart-mode', {
+        autostartEnabled: res.enabled,
+        requiresApproval: Boolean(res.requiresApproval),
+      });
+    } catch (_) {}
   } else if (id === 'quit') {
     app.quit();
   }

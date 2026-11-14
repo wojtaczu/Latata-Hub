@@ -213,9 +213,38 @@ async function runBackendApiTest() {
   assert(typeof mainMod.api.toggleAutostart === 'function', 'api.toggleAutostart is exported function');
   assert(typeof mainMod.api.getAutostartState === 'function', 'api.getAutostartState is exported function');
   const resAutoOn = await mainMod.api.toggleAutostart({ value: true }, mockApp);
-  assert(resAutoOn?.ok === true && resAutoOn?.enabled === true, 'toggleAutostart enabled autostart');
+  assert(resAutoOn?.ok === true && resAutoOn?.enabled === true && resAutoOn?.requiresApproval === false, 'toggleAutostart enabled autostart');
   const resAutoOff = await mainMod.api.toggleAutostart({ value: false }, mockApp);
-  assert(resAutoOff?.ok === true && resAutoOff?.enabled === false, 'toggleAutostart disabled autostart');
+  assert(resAutoOff?.ok === true && resAutoOff?.enabled === false && resAutoOff?.requiresApproval === false, 'toggleAutostart disabled autostart');
+
+  // Verify Autostart requires-approval & failure states
+  const origLaunchAtLogin = mockApp.launchAtLogin;
+  mockApp.launchAtLogin = {
+    get: async () => 'requires-approval',
+    set: async () => 'requires-approval',
+  };
+  const resAutoApproval = await mainMod.api.toggleAutostart({ value: true }, mockApp);
+  assert(
+    resAutoApproval?.ok === true && resAutoApproval?.enabled === false && resAutoApproval?.requiresApproval === true && resAutoApproval?.status === 'requires-approval',
+    'toggleAutostart distinguishes requires-approval from enabled'
+  );
+  const resGetApproval = await mainMod.api.getAutostartState({}, mockApp);
+  assert(
+    resGetApproval?.ok === true && resGetApproval?.enabled === false && resGetApproval?.requiresApproval === true,
+    'getAutostartState reports requiresApproval: true and enabled: false'
+  );
+
+  mockApp.launchAtLogin = {
+    get: async () => { throw new Error('SMAppService error'); },
+    set: async () => { throw new Error('SMAppService error'); },
+    disableFallback: true,
+  };
+  try {
+    const resAutoFail = await mainMod.api.toggleAutostart({ value: true }, mockApp);
+    assert(resAutoFail?.ok === false && resAutoFail?.error === 'AUTOSTART_FAILED', 'toggleAutostart returns ok: false and AUTOSTART_FAILED when configuration fails');
+  } finally {
+    mockApp.launchAtLogin = origLaunchAtLogin;
+  }
 
   // Verify Security & Path Traversal Guards
   const resBadDisk = await mainMod.api.scanDiskUsage({ path: '/Applications/../Users' }, mockApp);
@@ -223,6 +252,9 @@ async function runBackendApiTest() {
 
   const resBadReveal = await mainMod.api.revealInFinder({ path: '../../etc/passwd' }, mockApp);
   assert(resBadReveal?.ok === false && resBadReveal?.error === 'INVALID_PATH', 'revealInFinder rejects path traversal attempts');
+
+  const resOutReveal = await mainMod.api.revealInFinder({ path: '/etc/hosts' }, mockApp);
+  assert(resOutReveal?.ok === false && resOutReveal?.error === 'INVALID_PATH', 'revealInFinder rejects out-of-scope system paths (/etc/hosts)');
 
   assert(typeof mainMod.api.openExternal === 'function', 'api.openExternal is exported function');
   assert(typeof mainMod.api.openPrivacySettings === 'function', 'api.openPrivacySettings is exported function');
@@ -240,6 +272,20 @@ async function runBackendApiTest() {
 
   const resOutDisk = await mainMod.api.scanDiskUsage({ path: '/etc' }, mockApp);
   assert(resOutDisk?.ok === false && resOutDisk?.error === 'INVALID_PATH', 'scanDiskUsage rejects out-of-scope system paths (/etc)');
+
+  // Verify Speedtest HTTP error & stage timeout handling
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 503 });
+    const resSpeedHttp = await mainMod.api.runSpeedtest({}, mockApp);
+    assert(resSpeedHttp?.ok === false && String(resSpeedHttp?.error).includes('503'), 'runSpeedtest handles HTTP error status on ping');
+
+    globalThis.fetch = () => new Promise(() => {});
+    const resSpeedTimeout = await mainMod.api.runSpeedtest({ pingTimeoutMs: 40 }, mockApp);
+    assert(resSpeedTimeout?.ok === false && resSpeedTimeout?.error === 'PING_TIMEOUT', 'runSpeedtest aborts and returns PING_TIMEOUT when ping hangs');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 
   const [concScanA, concScanB] = await Promise.all([
     mainMod.api.scanDiskUsage({ path: '/Applications' }, mockApp),

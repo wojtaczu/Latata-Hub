@@ -248,6 +248,8 @@ const I18N = {
     autostartLabel: 'Auto:',
     autostartOn: 'Wł.',
     autostartOff: 'Wył.',
+    autostartApproval: 'Zatwierdź',
+    autostartApprovalHint: 'Wymaga zatwierdzenia w Ustawieniach systemowych → Ogólne → Elementy logowania',
     homeCleanRamBtn: '🧹 Odśwież RAM i DNS',
     homeCleanRamTitle: 'Odświeżenie pamięci podręcznej DNS (dscacheutil) i aktualizacja stanu pamięci RAM',
     homeProcsBtn: '⚡ Procesy',
@@ -495,6 +497,8 @@ const I18N = {
     autostartLabel: 'Auto:',
     autostartOn: 'ON',
     autostartOff: 'OFF',
+    autostartApproval: 'Approve',
+    autostartApprovalHint: 'Requires approval in System Settings → General → Login Items',
     homeCleanRamBtn: '🧹 Flush RAM & DNS',
     homeCleanRamTitle: 'Flush DNS cache (dscacheutil) and update RAM buffers',
     homeProcsBtn: '⚡ Processes',
@@ -1919,7 +1923,7 @@ function renderTelemetry(snap) {
     }
   }
   if (typeof snap.autostart === 'boolean') {
-    updateAutostartUI(snap.autostart);
+    updateAutostartUI(snap.autostart, snap.autostartRequiresApproval);
   }
 
   if (snap.junk) {
@@ -3089,14 +3093,23 @@ if ($('btnHomeToggleTooltips')) {
   });
 }
 
-function updateAutostartUI(enabled) {
+function updateAutostartUI(enabled, requiresApproval = false) {
   const isEnabled = Boolean(enabled);
+  const needsApproval = Boolean(requiresApproval);
   if ($('valAutostart')) {
-    $('valAutostart').textContent = isEnabled ? t('autostartOn') : t('autostartOff');
+    $('valAutostart').textContent = needsApproval
+      ? t('autostartApproval')
+      : (isEnabled ? t('autostartOn') : t('autostartOff'));
   }
   const autoDot = $('dotAutostart');
   if (autoDot) {
-    autoDot.className = isEnabled ? 'sys-dot dot-green' : 'sys-dot';
+    autoDot.className = needsApproval
+      ? 'sys-dot dot-amber'
+      : (isEnabled ? 'sys-dot dot-green' : 'sys-dot');
+  }
+  const pill = $('pillAutostart');
+  if (pill) {
+    pill.title = needsApproval ? t('autostartApprovalHint') : t('pillAutostartTitle');
   }
 }
 
@@ -3105,7 +3118,7 @@ if ($('pillAutostart')) {
     ev.stopPropagation();
     try {
       const res = await tiny.api.call('toggleAutostart');
-      if (res?.ok) updateAutostartUI(res.enabled);
+      if (res?.ok) updateAutostartUI(res.enabled, res.requiresApproval);
     } catch (err) {
       console.error('Toggle autostart failed:', err);
     }
@@ -3135,8 +3148,8 @@ async function boot() {
     setTooltipsEnabled(val);
   });
 
-  tiny.api.on('autostart-mode', ({ autostartEnabled }) => {
-    updateAutostartUI(autostartEnabled);
+  tiny.api.on('autostart-mode', ({ autostartEnabled, requiresApproval }) => {
+    updateAutostartUI(autostartEnabled, requiresApproval);
   });
 
   tiny.api.on('telemetry', (snap) => {
