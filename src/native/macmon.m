@@ -662,10 +662,19 @@ int main(int argc, const char * argv[]) {
         }
 
         if (argc >= 3 && strcmp(argv[1], "--kill") == 0) {
-            pid_t targetPid = (pid_t)atoi(argv[2]);
-            int sig = (argc >= 4) ? atoi(argv[3]) : SIGTERM;
+            char *pidEnd = NULL;
+            long parsedPid = strtol(argv[2], &pidEnd, 10);
+            pid_t targetPid = (pidEnd != argv[2] && *pidEnd == '\0' && parsedPid > 1 && parsedPid <= INT_MAX) ? (pid_t)parsedPid : 0;
+
+            int sig = SIGTERM;
+            if (argc >= 4) {
+                char *sigEnd = NULL;
+                long parsedSig = strtol(argv[3], &sigEnd, 10);
+                if (sigEnd != argv[3] && *sigEnd == '\0' && (parsedSig == SIGKILL || parsedSig == SIGTERM || parsedSig == SIGINT)) {
+                    sig = (int)parsedSig;
+                }
+            }
             NSString *expectedName = (argc >= 5) ? [NSString stringWithUTF8String:argv[4]] : nil;
-            if (sig != SIGKILL && sig != SIGTERM && sig != SIGINT) sig = SIGTERM;
 
             if (targetPid <= 1) {
                 NSDictionary *res = @{@"ok": @(NO), @"error": @"Invalid PID (<= 1 prohibited)"};

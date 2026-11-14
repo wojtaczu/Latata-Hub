@@ -113,12 +113,13 @@ async function setLaunchAtLogin(app, enabled) {
   // 2. AppleScript / System Events Login Item (works across all macOS paths, including dist/)
   try {
     const appPath = await getActualAppBundlePath();
+    const safeAppPath = String(appPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     if (target) {
       const sc = `tell application "System Events"
         try
           delete (every login item whose name is "Latata.Hub")
         end try
-        make login item at end with properties {path:"${appPath}", hidden:false, name:"Latata.Hub"}
+        make login item at end with properties {path:"${safeAppPath}", hidden:false, name:"Latata.Hub"}
       end tell`;
       const proc = tjs.spawn(['/usr/bin/osascript', '-e', sc], { stdout: 'ignore', stderr: 'ignore' });
       await proc.wait();
