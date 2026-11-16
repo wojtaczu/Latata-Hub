@@ -162,6 +162,8 @@ async function runBackendApiTest() {
 
   // Verify Network & Wi-Fi
   assert(snapshot.network !== undefined, 'Network telemetry present');
+  assert(typeof snapshot.network?.router === 'string', `Network router IP resolved (${snapshot.network?.router})`);
+  assert(typeof snapshot.network?.dns === 'string', `Network DNS server resolved (${snapshot.network?.dns})`);
   assert(snapshot.wifi?.ssid === 'Latata_WiFi_5G', `Wi-Fi SSID correctly resolved (${snapshot.wifi?.ssid})`);
   assert(snapshot.wifi?.bars >= 1 && snapshot.wifi?.bars <= 5, `Wi-Fi signal bars calculated (${snapshot.wifi?.bars}/5)`);
 
@@ -304,6 +306,20 @@ async function runBackendApiTest() {
   assert(resLang?.ok === true && resLang?.lang === 'en', 'setLanguage switches language without error');
   await mainMod.api.setLanguage({ lang: 'pl' }, mockApp);
 
+  // Verify WebView Crash & Blank-Screen Self-Healing (onNavigate crash -> app.reload + heartbeat)
+  assert(typeof mainMod.onNavigate === 'function', 'main.js exports onNavigate crash recovery handler');
+  assert(typeof mainMod.onSystem === 'function', 'main.js exports onSystem sleep/wake handler');
+  assert(typeof mainMod.api.uiHeartbeat === 'function', 'api.uiHeartbeat is exported function');
+  assert(typeof mainMod.api.setUiVisibility === 'function', 'api.setUiVisibility is exported function');
+  let reloadCalled = 0;
+  mockApp.reload = async () => { reloadCalled++; };
+  await mainMod.onNavigate({ window: 'main', kind: 'crash' }, mockApp);
+  assert(reloadCalled === 1, 'onNavigate({ kind: "crash" }) automatically reloads dead WKWebView');
+  const hbRes = await mainMod.api.uiHeartbeat({ visible: false }, mockApp);
+  assert(hbRes?.ok === true, 'uiHeartbeat acknowledges background UI visibility');
+  const visRes = await mainMod.api.setUiVisibility({ visible: true }, mockApp);
+  assert(visRes?.ok === true && visRes?.visible === true, 'setUiVisibility restores active UI state');
+
   // Verify Native macmon Privacy Filtering for Icons
   const iconProc = tjs.spawn([(tjs.cwd || '.') + '/executables/macmon', '--icons', '/Applications/Safari.app', '/Users/test/Desktop/app'], { stdout: 'pipe', stderr: 'ignore' });
   const iconOut = await iconProc.stdout.text();
@@ -349,6 +365,8 @@ async function runConfigAndIntegrityTest() {
   assert(htmlText.includes('id="pillAutostart"'), 'index.html includes #pillAutostart toggle');
   assert(!htmlText.includes('id="btnDiskUp"'), 'index.html has removed obsolete #btnDiskUp (Wstecz) button');
   assert(htmlText.includes('id="btnScanDiskUsage"'), 'index.html includes #btnScanDiskUsage refresh button');
+  assert(htmlText.includes('id="speedtestModes"'), 'index.html includes #speedtestModes selector pills');
+  assert(htmlText.includes('id="wifiSsidVal"'), 'index.html includes #wifiSsidVal network name readout');
 
   // 4. Frontend CSS bugfix & JS syntax validation
   const cssRaw = await tjs.readFile(base + '/src/frontend/style.css');

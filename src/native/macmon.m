@@ -5,6 +5,7 @@
 #import <IOKit/ps/IOPSKeys.h>
 #import <IOKit/hidsystem/IOHIDEventSystemClient.h>
 #import <CoreWLAN/CoreWLAN.h>
+#import <SystemConfiguration/SystemConfiguration.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <libproc.h>
@@ -913,11 +914,37 @@ int main(int argc, const char * argv[]) {
             freeifaddrs(ifap);
         }
 
+        NSString *routerIp = @"—";
+        NSString *dnsServer = @"—";
+        SCDynamicStoreRef scStore = SCDynamicStoreCreate(NULL, CFSTR("macmon"), NULL, NULL);
+        if (scStore) {
+            NSDictionary *ipv4State = (__bridge_transfer NSDictionary *)SCDynamicStoreCopyValue(scStore, CFSTR("State:/Network/Global/IPv4"));
+            if ([ipv4State isKindOfClass:[NSDictionary class]]) {
+                NSString *rtr = ipv4State[@"Router"];
+                if ([rtr isKindOfClass:[NSString class]] && rtr.length > 0) {
+                    routerIp = rtr;
+                }
+            }
+            NSDictionary *dnsState = (__bridge_transfer NSDictionary *)SCDynamicStoreCopyValue(scStore, CFSTR("State:/Network/Global/DNS"));
+            if ([dnsState isKindOfClass:[NSDictionary class]]) {
+                NSArray *servers = dnsState[@"ServerAddresses"];
+                if ([servers isKindOfClass:[NSArray class]] && servers.count > 0) {
+                    NSString *firstDns = [servers.firstObject description];
+                    if (firstDns.length > 0) {
+                        dnsServer = firstDns;
+                    }
+                }
+            }
+            CFRelease(scStore);
+        }
+
         root[@"network"] = @{
             @"rxBytes": @(totalRx),
             @"txBytes": @(totalTx),
             @"interface": primaryIf,
-            @"ip": primaryIp
+            @"ip": primaryIp,
+            @"router": routerIp,
+            @"dns": dnsServer
         };
 
         // 4. Wi-Fi extended details via CoreWLAN
@@ -941,9 +968,25 @@ int main(int argc, const char * argv[]) {
             else if (chWidth == 3) widthMHz = 80;
             else if (chWidth == 4) widthMHz = 160;
 
+            NSString *resolvedSsid = wifiIf.ssid;
+            if ((!resolvedSsid || resolvedSsid.length == 0) && rssi != 0) {
+                CWNetworkProfile *prof = wifiIf.configuration.networkProfiles.firstObject;
+                if (prof && prof.ssid.length > 0) {
+                    resolvedSsid = prof.ssid;
+                }
+            }
+
+            long phyMode = (long)wifiIf.activePHYMode;
+            NSString *phyStr = @"";
+            if (phyMode >= 7) phyStr = @"Wi-Fi 7";
+            else if (phyMode == 6) phyStr = @"Wi-Fi 6";
+            else if (phyMode == 5) phyStr = @"Wi-Fi 5";
+            else if (phyMode == 4) phyStr = @"Wi-Fi 4";
+
             root[@"wifiExtra"] = @{
                 @"interface": wifiIf.interfaceName ?: @"en0",
-                @"ssid": wifiIf.ssid ?: [NSNull null],
+                @"ssid": resolvedSsid ?: [NSNull null],
+                @"phyMode": phyStr,
                 @"rssi": @(rssi),
                 @"noise": @(noise),
                 @"snr": @(rssi - noise),

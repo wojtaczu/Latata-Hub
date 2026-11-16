@@ -8,6 +8,8 @@ let prevProcsAt = 0;
 let sessionStartNet = null;
 let macmonBinPath = null;
 let latestPingMs = null;
+let latestJitterMs = null;
+const pingSamples = [];
 let lastPingAt = 0;
 let isPinging = false;
 let isSpeedtesting = false;
@@ -31,6 +33,113 @@ let tooltipsEnabled = true;
 let appLang = 'pl';
 let autostartEnabled = false;
 let autostartRequiresApproval = false;
+const sentIconsToUi = new Set();
+let lastPushedJunk = null;
+let lastPushedDiskUsage = null;
+let uiVisible = true;
+let isSystemSleeping = false;
+let lastUiHeartbeatAt = Date.now();
+let lastWebViewReloadAt = 0;
+let isRecoveringWebView = false;
+
+function resetUiPushCache() {
+  sentIconsToUi.clear();
+  lastPushedJunk = null;
+  lastPushedDiskUsage = null;
+}
+
+function buildPushSnapshot(snapshot) {
+  if (!snapshot) return snapshot;
+  const stripIconList = (list) => {
+    if (!Array.isArray(list)) return [];
+    return list.map((item) => {
+      const key = item.iconKey || item.name || '';
+      if (item.icon && key) {
+        if (sentIconsToUi.has(key)) {
+          return { ...item, icon: null };
+        }
+        sentIconsToUi.add(key);
+      }
+      return item;
+    });
+  };
+
+  const includeJunk = snapshot.junk && snapshot.junk !== lastPushedJunk;
+  if (includeJunk) lastPushedJunk = snapshot.junk;
+
+  const includeDiskUsage = snapshot.diskUsage && snapshot.diskUsage !== lastPushedDiskUsage;
+  if (includeDiskUsage) lastPushedDiskUsage = snapshot.diskUsage;
+
+  return {
+    ...snapshot,
+    cpu: snapshot.cpu ? { ...snapshot.cpu, topProcesses: stripIconList(snapshot.cpu.topProcesses) } : snapshot.cpu,
+    memory: snapshot.memory ? { ...snapshot.memory, topProcesses: stripIconList(snapshot.memory.topProcesses) } : snapshot.memory,
+    dev: snapshot.dev ? { ...snapshot.dev, ports: stripIconList(snapshot.dev.ports) } : snapshot.dev,
+    junk: includeJunk ? snapshot.junk : null,
+    diskUsage: includeDiskUsage ? snapshot.diskUsage : null,
+  };
+}
+
+export async function recoverWebView(app, reason = 'unknown') {
+  const now = Date.now();
+  if (isRecoveringWebView || now - lastWebViewReloadAt < 3000) {
+    return { ok: false, skipped: true, reason };
+  }
+  isRecoveringWebView = true;
+  lastWebViewReloadAt = now;
+  lastUiHeartbeatAt = now;
+  uiVisible = true;
+  resetUiPushCache();
+  try {
+    if (typeof app?.reload === 'function') {
+      await app.reload();
+    }
+    setTimeout(() => {
+      try {
+        app?.push?.('window-mode', { desktopWidgetMode, compactMode });
+        app?.push?.('caffeinate-mode', { caffeinateActive });
+        app?.push?.('tooltips-mode', { tooltipsEnabled });
+        app?.push?.('autostart-mode', {
+          autostartEnabled,
+          requiresApproval: autostartRequiresApproval,
+        });
+        if (latestTelemetrySnapshot) {
+          resetUiPushCache();
+          app?.push?.('telemetry', buildPushSnapshot(latestTelemetrySnapshot));
+        }
+      } catch (_) {}
+    }, 450);
+  } catch (_) {
+  } finally {
+    isRecoveringWebView = false;
+  }
+  return { ok: true, reloaded: true, reason };
+}
+
+async function spawnTextWithTimeout(args, timeoutMs = 4000) {
+  let proc = null;
+  let timer = null;
+  try {
+    proc = tjs.spawn(args, { stdout: 'pipe', stderr: 'ignore' });
+    const workPromise = (async () => {
+      const text = proc.stdout ? await proc.stdout.text() : '';
+      await proc.wait();
+      return text;
+    })();
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        try { proc?.kill?.(); } catch (_) {}
+        reject(new Error('SPAWN_TIMEOUT'));
+      }, timeoutMs);
+    });
+    return await Promise.race([workPromise, timeoutPromise]);
+  } catch (_) {
+    try { proc?.kill?.(); } catch (__) {}
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function isAllowedUserPath(rawPath) {
   if (!rawPath || typeof rawPath !== 'string') return false;
@@ -348,9 +457,7 @@ async function runMacmon(app) {
   const bin = await resolveMacmonPath(app);
   if (!bin) return null;
   try {
-    const proc = tjs.spawn([bin], { stdout: 'pipe', stderr: 'ignore' });
-    const text = proc.stdout ? await proc.stdout.text() : '';
-    await proc.wait();
+    const text = await spawnTextWithTimeout([bin], 3500);
     if (!text) return null;
     return JSON.parse(text);
   } catch (_) {
@@ -364,9 +471,7 @@ async function runJunkScanOnce(app) {
     try {
       const bin = await resolveMacmonPath(app);
       if (!bin) return latestJunkScan;
-      const proc = tjs.spawn([bin, '--scan-junk'], { stdout: 'pipe', stderr: 'ignore' });
-      const text = proc.stdout ? await proc.stdout.text() : '';
-      await proc.wait();
+      const text = await spawnTextWithTimeout([bin, '--scan-junk'], 10000);
       if (text) {
         latestJunkScan = JSON.parse(text);
         lastJunkScanAt = Date.now();
@@ -394,9 +499,7 @@ async function runDiskUsageScanOnce(app, targetPath = '', force = false) {
       const bin = await resolveMacmonPath(app);
       if (!bin) return latestDiskUsage;
       const args = key ? [bin, '--scan-disk', key] : [bin, '--scan-disk'];
-      const proc = tjs.spawn(args, { stdout: 'pipe', stderr: 'ignore' });
-      const text = proc.stdout ? await proc.stdout.text() : '';
-      await proc.wait();
+      const text = await spawnTextWithTimeout(args, 15000);
       if (text) {
         parsed = JSON.parse(text);
         if (seq === diskScanSeq) {
@@ -433,9 +536,7 @@ async function resolveMissingIcons(paths, app) {
   const bin = await resolveMacmonPath(app);
   if (!bin) return;
   try {
-    const proc = tjs.spawn([bin, '--icons', ...missing], { stdout: 'pipe', stderr: 'ignore' });
-    const text = proc.stdout ? await proc.stdout.text() : '';
-    await proc.wait();
+    const text = await spawnTextWithTimeout([bin, '--icons', ...missing], 4000);
     if (text) {
       const parsed = JSON.parse(text);
       for (const m of missing) {
@@ -455,29 +556,45 @@ function isKnownDevPort(port) {
   return known.has(port);
 }
 
+function recordPingSample(ms) {
+  latestPingMs = ms;
+  pingSamples.push(ms);
+  if (pingSamples.length > 8) pingSamples.shift();
+  if (pingSamples.length >= 2) {
+    let diffSum = 0;
+    for (let i = 1; i < pingSamples.length; i++) {
+      diffSum += Math.abs(pingSamples[i] - pingSamples[i - 1]);
+    }
+    latestJitterMs = Math.round((diffSum / (pingSamples.length - 1)) * 10) / 10;
+  } else {
+    latestJitterMs = 0;
+  }
+}
+
 async function measurePingOnce() {
   if (isPinging) return;
   isPinging = true;
+  let tcpTimer = null;
   try {
     const t0 = Date.now();
-    const sock = await tjs.connect('tcp', '1.1.1.1', 53);
+    const sock = await Promise.race([
+      tjs.connect('tcp', '1.1.1.1', 53),
+      new Promise((_, reject) => {
+        tcpTimer = setTimeout(() => reject(new Error('TCP_PING_TIMEOUT')), 2000);
+      }),
+    ]);
     const rtt = Date.now() - t0;
     try { sock.close(); } catch (_) {}
     if (rtt >= 1 && rtt < 5000) {
-      latestPingMs = rtt;
+      recordPingSample(rtt);
       pingFailStreak = 0;
     }
   } catch (_) {
     try {
-      const proc = tjs.spawn(['/sbin/ping', '-c', '1', '-W', '1000', '1.1.1.1'], {
-        stdout: 'pipe',
-        stderr: 'ignore',
-      });
-      const out = proc.stdout ? await proc.stdout.text() : '';
-      await proc.wait();
+      const out = (await spawnTextWithTimeout(['/sbin/ping', '-c', '1', '-W', '1000', '1.1.1.1'], 2200)) || '';
       const m = out.match(/time=([0-9.]+)\s*ms/);
       if (m) {
-        latestPingMs = Math.round(parseFloat(m[1]) * 10) / 10;
+        recordPingSample(Math.round(parseFloat(m[1]) * 10) / 10);
         pingFailStreak = 0;
       } else {
         pingFailStreak++;
@@ -488,6 +605,7 @@ async function measurePingOnce() {
       if (pingFailStreak >= 2) latestPingMs = null;
     }
   } finally {
+    if (tcpTimer) clearTimeout(tcpTimer);
     lastPingAt = Date.now();
     isPinging = false;
   }
@@ -629,6 +747,7 @@ async function collectTelemetry(app) {
     rank: idx + 1,
     pid: p.pid,
     name: p.name,
+    iconKey: p.iconPath || p.name,
     icon: iconCache.get(p.iconPath) || null,
     cpuPercent: p.cpuPercent,
     memBytes: p.memBytes,
@@ -639,6 +758,7 @@ async function collectTelemetry(app) {
     rank: idx + 1,
     pid: p.pid,
     name: p.name,
+    iconKey: p.iconPath || p.name,
     icon: iconCache.get(p.iconPath) || null,
     memBytes: p.memBytes,
     memPercent: p.memPercent,
@@ -653,6 +773,7 @@ async function collectTelemetry(app) {
       address: pt.address,
       memBytes: pt.memBytes,
       isDevPort: pt.isDevPort,
+      iconKey: pt.iconPath || pt.name,
       icon: iconCache.get(pt.iconPath) || null,
     })),
     docker: {
@@ -687,6 +808,8 @@ async function collectTelemetry(app) {
   const network = {
     interface: netRaw.interface || 'en0',
     ip: netRaw.ip || '—',
+    router: netRaw.router || '—',
+    dns: netRaw.dns || '—',
     rxBytesPerSec: rxBps,
     txBytesPerSec: txBps,
     rxMbps: Math.round(((rxBps * 8) / 1_000_000) * 100) / 100,
@@ -696,6 +819,7 @@ async function collectTelemetry(app) {
     sessionRxBytes: sessionStartNet ? Math.max(0, netRaw.rxBytes - sessionStartNet.rxBytes) : 0,
     sessionTxBytes: sessionStartNet ? Math.max(0, netRaw.txBytes - sessionStartNet.txBytes) : 0,
     pingMs: latestPingMs,
+    jitterMs: latestJitterMs,
   };
 
   // Wi-Fi
@@ -709,6 +833,7 @@ async function collectTelemetry(app) {
 
   const wifi = {
     ssid,
+    phyMode: wExtra.phyMode || '',
     bssid: sysWifi?.bssid || null,
     interface: wExtra.interface || netRaw.interface || 'en0',
     rssi,
@@ -1025,7 +1150,43 @@ function updateTrayMenu(app, snapshot) {
 }
 
 export const api = {
+  async uiHello({ visible = true } = {}, _app) {
+    lastUiHeartbeatAt = Date.now();
+    uiVisible = Boolean(visible);
+    resetUiPushCache();
+    return {
+      ok: true,
+      desktopWidgetMode,
+      compactMode,
+      caffeinateActive,
+      tooltipsEnabled,
+      autostartEnabled,
+      autostartRequiresApproval,
+    };
+  },
+
+  async uiHeartbeat({ visible } = {}, _app) {
+    lastUiHeartbeatAt = Date.now();
+    if (typeof visible === 'boolean') {
+      uiVisible = visible;
+    }
+    return { ok: true };
+  },
+
+  async setUiVisibility({ visible = true } = {}, app) {
+    lastUiHeartbeatAt = Date.now();
+    const prev = uiVisible;
+    uiVisible = Boolean(visible);
+    if (uiVisible && !prev && latestTelemetrySnapshot) {
+      try {
+        app?.push?.('telemetry', buildPushSnapshot(latestTelemetrySnapshot));
+      } catch (_) {}
+    }
+    return { ok: true, visible: uiVisible };
+  },
+
   async setLanguage({ lang } = {}, app) {
+    lastUiHeartbeatAt = Date.now();
     appLang = lang === 'en' ? 'en' : 'pl';
     try {
       if (latestTelemetrySnapshot) {
@@ -1293,17 +1454,20 @@ export const api = {
     }
   },
 
-  async runSpeedtest({ pingTimeoutMs, downloadTimeoutMs } = {}, app) {
+  async runSpeedtest({ mode = 'standard', pingTimeoutMs, downloadTimeoutMs } = {}, app) {
     if (isSpeedtesting) {
       return { busy: true };
     }
     isSpeedtesting = true;
+    const resolvedMode = mode === 'quick' || mode === 'long' ? mode : 'standard';
+    const defaultDlTimeout = resolvedMode === 'long' ? 25000 : (resolvedMode === 'standard' ? 20000 : SPEEDTEST_DOWNLOAD_TIMEOUT_MS);
     const pingLimit = Number(pingTimeoutMs) > 0 ? Number(pingTimeoutMs) : SPEEDTEST_PING_TIMEOUT_MS;
-    const downloadLimit = Number(downloadTimeoutMs) > 0 ? Number(downloadTimeoutMs) : SPEEDTEST_DOWNLOAD_TIMEOUT_MS;
+    const downloadLimit = Number(downloadTimeoutMs) > 0 ? Number(downloadTimeoutMs) : defaultDlTimeout;
     try {
-      app.push('speedtest-progress', { phase: 'ping', progress: 10 });
-      const latencyMs = await withStageTimeout(
+      app.push('speedtest-progress', { phase: 'ping', progress: 10, mode: resolvedMode });
+      const { latencyMs, jitterMs } = await withStageTimeout(
         async (pingSignal) => {
+          const samples = [];
           const tPing0 = Date.now();
           const pingResp = await fetch('https://speed.cloudflare.com/__down?bytes=0', {
             cache: 'no-store',
@@ -1312,7 +1476,34 @@ export const api = {
           if (!pingResp.ok) {
             throw new Error('HTTP ' + pingResp.status);
           }
-          return Math.max(1, Date.now() - tPing0);
+          samples.push(Math.max(1, Date.now() - tPing0));
+
+          if (!pingTimeoutMs) {
+            for (let i = 0; i < 2; i++) {
+              try {
+                const t0 = Date.now();
+                const r = await fetch('https://speed.cloudflare.com/__down?bytes=0', {
+                  cache: 'no-store',
+                  ...(pingSignal ? { signal: pingSignal } : {}),
+                });
+                if (r.ok) {
+                  samples.push(Math.max(1, Date.now() - t0));
+                }
+              } catch (_) {}
+            }
+          }
+
+          const minPing = Math.min(...samples);
+          let jit = latestJitterMs || 0;
+          if (samples.length >= 2) {
+            let diff = 0;
+            for (let i = 1; i < samples.length; i++) {
+              diff += Math.abs(samples[i] - samples[i - 1]);
+            }
+            jit = Math.round((diff / (samples.length - 1)) * 10) / 10;
+          }
+          recordPingSample(minPing);
+          return { latencyMs: minPing, jitterMs: jit };
         },
         pingLimit,
         'PING_TIMEOUT'
@@ -1320,49 +1511,80 @@ export const api = {
 
       app.push('speedtest-progress', {
         phase: 'download',
-        progress: 25,
+        progress: 20,
         latencyMs,
+        jitterMs,
+        mode: resolvedMode,
       });
 
-      const targetBytes = 15_000_000;
-      const { received, totalSec } = await withStageTimeout(
+      const isLongMode = resolvedMode === 'long';
+      const targetDurationMs = 15_000;
+      const targetBytes = resolvedMode === 'quick' ? 15_000_000 : (isLongMode ? 100_000_000 : 50_000_000);
+
+      const { received, totalSec, peakMbps } = await withStageTimeout(
         async (dlSignal) => {
           const tStart = Date.now();
-          const resp = await fetch(`https://speed.cloudflare.com/__down?bytes=${targetBytes}`, {
-            cache: 'no-store',
-            ...(dlSignal ? { signal: dlSignal } : {}),
-          });
-          if (!resp.ok || !resp.body) {
-            throw new Error('HTTP ' + resp.status);
-          }
-
-          const reader = resp.body.getReader();
           let bytesReceived = 0;
+          let maxMbps = 0;
           let lastPush = Date.now();
 
           while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value) {
-              bytesReceived += value.byteLength;
-              const now = Date.now();
-              if (now - lastPush > 140) {
-                const elapsedSec = Math.max(0.05, (now - tStart) / 1000);
-                const currentMbps = Math.round(((bytesReceived * 8) / elapsedSec / 1_000_000) * 10) / 10;
-                const pct = Math.min(95, Math.round(25 + (bytesReceived / targetBytes) * 70));
-                app.push('speedtest-progress', {
-                  phase: 'download',
-                  progress: pct,
-                  downloadMbps: currentMbps,
-                  latencyMs,
-                });
-                lastPush = now;
+            const resp = await fetch(`https://speed.cloudflare.com/__down?bytes=${targetBytes}`, {
+              cache: 'no-store',
+              ...(dlSignal ? { signal: dlSignal } : {}),
+            });
+            if (!resp.ok || !resp.body) {
+              throw new Error('HTTP ' + resp.status);
+            }
+
+            const reader = resp.body.getReader();
+            let stopTimeReached = false;
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) {
+                bytesReceived += value.byteLength;
+                const now = Date.now();
+                const elapsedMs = now - tStart;
+                if (now - lastPush > 130) {
+                  const elapsedSec = Math.max(0.05, elapsedMs / 1000);
+                  const currentMbps = Math.round(((bytesReceived * 8) / elapsedSec / 1_000_000) * 10) / 10;
+                  if (currentMbps > maxMbps) maxMbps = currentMbps;
+                  const ratio = isLongMode
+                    ? Math.min(1, elapsedMs / targetDurationMs)
+                    : Math.min(1, bytesReceived / targetBytes);
+                  const pct = Math.min(97, Math.round(20 + ratio * 77));
+                  const remainingSec = isLongMode ? Math.max(0, Math.ceil((targetDurationMs - elapsedMs) / 1000)) : null;
+                  app.push('speedtest-progress', {
+                    phase: 'download',
+                    progress: pct,
+                    downloadMbps: currentMbps,
+                    peakMbps: maxMbps,
+                    latencyMs,
+                    jitterMs,
+                    mode: resolvedMode,
+                    remainingSec,
+                  });
+                  lastPush = now;
+                }
+                if (isLongMode && elapsedMs >= targetDurationMs) {
+                  stopTimeReached = true;
+                  try { await reader.cancel(); } catch (_) {}
+                  break;
+                }
               }
             }
+
+            if (!isLongMode || stopTimeReached || (Date.now() - tStart) >= targetDurationMs) {
+              break;
+            }
           }
+
           return {
             received: bytesReceived,
             totalSec: Math.max(0.05, (Date.now() - tStart) / 1000),
+            peakMbps: maxMbps,
           };
         },
         downloadLimit,
@@ -1374,9 +1596,12 @@ export const api = {
 
       const result = {
         ok: true,
+        mode: resolvedMode,
         downloadMbps: finalMbps,
         downloadMBps: finalMBps,
+        peakMbps: Math.max(finalMbps, peakMbps),
         latencyMs,
+        jitterMs,
         bytes: received,
         durationSec: Math.round(totalSec * 10) / 10,
       };
@@ -1435,12 +1660,28 @@ export async function init(app) {
 
   let tickCount = 0;
   let isTicking = false;
+  lastUiHeartbeatAt = Date.now();
   const runTick = async () => {
-    if (isTicking) return;
+    if (isTicking || isSystemSleeping) return;
     isTicking = true;
     try {
+      const now = Date.now();
+      // Self-healing watchdog: if WKWebView WebContent died or stopped responding
+      // for > 20 seconds while awake, automatically reload the WebView.
+      if (now - lastUiHeartbeatAt > 20_000) {
+        await recoverWebView(app, 'heartbeat-timeout');
+      }
+
+      // When the desktop widget is covered by other windows (uiVisible === false),
+      // throttle telemetry collection & IPC pushes to once every 4 seconds to prevent
+      // WebKit background Jetsam memory termination.
+      if (!uiVisible && tickCount % 4 !== 0) {
+        tickCount++;
+        return;
+      }
+
       const snapshot = await collectTelemetry(app);
-      app.push('telemetry', snapshot);
+      app.push('telemetry', buildPushSnapshot(snapshot));
       checkSmartAlerts(snapshot, app);
       if (tickCount % 2 === 0) {
         updateTrayMenu(app, snapshot);
@@ -1454,6 +1695,52 @@ export async function init(app) {
 
   await runTick();
   setInterval(runTick, 1000);
+}
+
+export async function onNavigate(info, app) {
+  if (!info) return;
+  if (info.kind === 'crash' || info.kind === 'fail') {
+    await recoverWebView(app, `nav-${info.kind}`);
+  } else if (info.kind === 'finish') {
+    lastUiHeartbeatAt = Date.now();
+    resetUiPushCache();
+  }
+}
+
+export async function onSystem(kind, _value, app) {
+  if (kind === 'sleep') {
+    isSystemSleeping = true;
+  } else if (kind === 'wake') {
+    isSystemSleeping = false;
+    const wakeAt = Date.now();
+    lastUiHeartbeatAt = wakeAt;
+    uiVisible = true;
+    resetUiPushCache();
+    setTimeout(async () => {
+      try {
+        const snap = await collectTelemetry(app);
+        app?.push?.('telemetry', buildPushSnapshot(snap));
+      } catch (_) {}
+    }, 400);
+    setTimeout(async () => {
+      // If UI didn't send any heartbeat after wake push, reload WebView
+      if (lastUiHeartbeatAt <= wakeAt) {
+        await recoverWebView(app, 'wake-unresponsive');
+      }
+    }, 4500);
+  }
+}
+
+export async function onWindowState(info, app) {
+  lastUiHeartbeatAt = Date.now();
+  if (info && (info.focused || info.minimized === false)) {
+    uiVisible = true;
+    if (latestTelemetrySnapshot) {
+      try {
+        app?.push?.('telemetry', buildPushSnapshot(latestTelemetrySnapshot));
+      } catch (_) {}
+    }
+  }
 }
 
 export async function onTray(id, app) {

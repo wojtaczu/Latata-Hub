@@ -56,6 +56,7 @@ Gotowa, skompilowana aplikacja dla **Apple Silicon (macOS 12 Monterey lub nowszy
 ## ✨ Główne Możliwości
 
 - **Pierścienie telemetryczne Apple**: Płynne, animowane pierścienie wskaźników obciążenia w czasie rzeczywistym dla procesora (CPU), pamięci RAM, grafiki (GPU) oraz siły sygnału Wi-Fi.
+- **Zaawansowana diagnostyka Sieci i Wi-Fi**: 3 tryby Speedtestu Cloudflare (`Szybki 15MB`, `Standard 50MB`, `15s Stress Test`) z pomiarem Peak, Ping i Jitter (`±ms`), nazwą sieci SSID i standardem (`Wi-Fi 6`), RSSI/Szum/SNR, adresem bramy (Router), DNS oraz licznikiem sesji.
 - **Baterie i akcesoria Bluetooth**: Odczyt na żywo poziomu naładowania baterii wewnętrznej MacBooka oraz podłączonych peryferiów Bluetooth (AirPods, Magic Mouse, Magic Trackpad, klawiatury bezprzewodowe).
 - **Pojemność Dysku i Eksplorator pamięci masowej**: Szybki podgląd zajętości dysku SSD wraz z bezpiecznym skanerem największych folderów i plików w katalogu domowym i aplikacjach.
 - **Smart Cleaner (Czyszczenie Systemu)**: Bezpieczne czyszczenie pamięci podręcznej aplikacji (cache), logów użytkownika, pamięci podręcznej DNS (`dscacheutil`) oraz Kosza (z natywnym potwierdzeniem).

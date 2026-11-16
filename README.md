@@ -56,6 +56,7 @@ Pre-compiled standalone builds for **Apple Silicon (macOS 12 Monterey or newer, 
 ## ✨ Features
 
 - **Apple-Style Status Rings**: Real-time circular gauges for CPU, RAM, GPU, and Wi-Fi signal.
+- **Network & Wi-Fi Diagnostics**: 3-mode Cloudflare Speedtest (`Quick 15MB`, `Standard 50MB`, `15s Stress Test`) with Peak speed, Ping & Jitter (`±ms`), Wi-Fi SSID & standard (`Wi-Fi 6`), RSSI/Noise/SNR, Gateway IP, DNS server, and session traffic counters.
 - **Battery & Peripheral Telemetry**: Live status for internal MacBook battery and connected Bluetooth accessories (AirPods, Magic Mouse, Trackpad, Keyboards).
 - **Disk Capacity & Storage Explorer**: Fast disk space analyzer with safe scanning for largest directories and files.
 - **Smart Cleaner**: Safely clean user app caches, system logs, DNS cache (`dscacheutil`), and Trash (with native confirmation).

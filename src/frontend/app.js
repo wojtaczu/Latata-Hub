@@ -299,9 +299,17 @@ const I18N = {
     speedtestReady: 'Speedtest Cloudflare gotowy',
     speedtestBtn: 'Testuj łącze',
     speedtestRunning: 'Test...',
-    speedtestMeasuringPing: 'Pomiar opóźnienia HTTP (Ping)...',
-    speedtestDownloading: (mbps) => `Pobieranie próbki testowej: ${mbps} Mbps...`,
-    speedtestDoneResult: (mbps, mBps, lat) => `Wynik: ${mbps} Mbps (${mBps} MB/s) • Ping ${lat} ms`,
+    stModeQuick: '⚡ Szybki',
+    stModeQuickTitle: 'Szybki test (próbka 15 MB)',
+    stModeStandard: '⚖️ Standard',
+    stModeStandardTitle: 'Standardowy test (próbka 50 MB)',
+    stModeLong: '🔥 15s',
+    stModeLongTitle: 'Długi test stabilności łącza (15 sekund pełnego obciążenia)',
+    speedtestMeasuringPing: 'Pomiar opóźnienia i stabilności (Ping & Jitter)...',
+    speedtestDownloading: (mbps, remSec) =>
+      remSec != null ? `Pobieranie: ${mbps} Mbps (pozostało ${remSec}s)...` : `Pobieranie próbki: ${mbps} Mbps...`,
+    speedtestDoneResult: (mbps, mBps, lat, jit, peak) =>
+      `↓ ${mbps} Mbps (${mBps} MB/s)${peak && Number(peak) > Number(mbps) * 1.05 ? ` • Peak ${peak}` : ''} • Ping ${lat} ms${jit != null ? ` (±${jit} ms)` : ''}`,
     speedtestError: (err) => `Błąd testu prędkości: ${err}`,
 
     wifiTitle: 'Siła sygnału Wi-Fi',
@@ -319,6 +327,9 @@ const I18N = {
     wifiSignal: 'Sygnał (RSSI)',
     wifiNoise: 'Szum (Noise)',
     wifiSnr: 'Odstęp SNR',
+    netRouterLabel: 'Brama (Router)',
+    netDnsLabel: 'Serwer DNS',
+    netSessionLabel: 'Sesja (↓ / ↑)',
     wifiNone: 'Brak sieci',
 
     gpuTitle: 'GPU i Temperatury',
@@ -548,9 +559,17 @@ const I18N = {
     speedtestReady: 'Cloudflare Speedtest ready',
     speedtestBtn: 'Run Speedtest',
     speedtestRunning: 'Testing...',
-    speedtestMeasuringPing: 'Measuring HTTP latency (Ping)...',
-    speedtestDownloading: (mbps) => `Downloading test sample: ${mbps} Mbps...`,
-    speedtestDoneResult: (mbps, mBps, lat) => `Result: ${mbps} Mbps (${mBps} MB/s) • Ping ${lat} ms`,
+    stModeQuick: '⚡ Quick',
+    stModeQuickTitle: 'Quick test (15 MB sample)',
+    stModeStandard: '⚖️ Standard',
+    stModeStandardTitle: 'Standard test (50 MB sample)',
+    stModeLong: '🔥 15s',
+    stModeLongTitle: 'Sustained 15-second link stability stress test',
+    speedtestMeasuringPing: 'Measuring latency & jitter (Ping)...',
+    speedtestDownloading: (mbps, remSec) =>
+      remSec != null ? `Downloading: ${mbps} Mbps (${remSec}s left)...` : `Downloading sample: ${mbps} Mbps...`,
+    speedtestDoneResult: (mbps, mBps, lat, jit, peak) =>
+      `↓ ${mbps} Mbps (${mBps} MB/s)${peak && Number(peak) > Number(mbps) * 1.05 ? ` • Peak ${peak}` : ''} • Ping ${lat} ms${jit != null ? ` (±${jit} ms)` : ''}`,
     speedtestError: (err) => `Speedtest error: ${err}`,
 
     wifiTitle: 'Wi-Fi Signal Strength',
@@ -568,6 +587,9 @@ const I18N = {
     wifiSignal: 'Signal (RSSI)',
     wifiNoise: 'Noise',
     wifiSnr: 'SNR Margin',
+    netRouterLabel: 'Gateway (Router)',
+    netDnsLabel: 'DNS Server',
+    netSessionLabel: 'Session (↓ / ↑)',
     wifiNone: 'No network',
 
     gpuTitle: 'GPU & Temperatures',
@@ -837,16 +859,36 @@ function setLanguage(lang) {
   if (netLegend[0]) netLegend[0].innerHTML = `<i class="leg-dot bg-emerald"></i> ${t('netLegendDown')}`;
   if (netLegend[1]) netLegend[1].innerHTML = `<i class="leg-dot bg-sky"></i> ${t('netLegendUp')}`;
   const btnSpeedtest = $('btnSpeedtest');
-  if (btnSpeedtest) btnSpeedtest.textContent = t('speedtestBtn');
+  if (btnSpeedtest && !btnSpeedtest.disabled) btnSpeedtest.textContent = t('speedtestBtn');
+  if ($('stModeQuick')) {
+    $('stModeQuick').textContent = t('stModeQuick');
+    $('stModeQuick').title = t('stModeQuickTitle');
+  }
+  if ($('stModeStandard')) {
+    $('stModeStandard').textContent = t('stModeStandard');
+    $('stModeStandard').title = t('stModeStandardTitle');
+  }
+  if ($('stModeLong')) {
+    $('stModeLong').textContent = t('stModeLong');
+    $('stModeLong').title = t('stModeLongTitle');
+  }
   const speedtestStatus = $('speedtestStatus');
-  if (speedtestStatus) speedtestStatus.textContent = t('speedtestReady');
+  if (speedtestStatus) {
+    if (speedtestStatus.dataset.hasResult && lastSpeedtestResult) {
+      renderSpeedtestDone(speedtestStatus, lastSpeedtestResult);
+    } else if (!speedtestStatus.dataset.hasResult) {
+      speedtestStatus.textContent = t('speedtestReady');
+    }
+  }
 
   const secWifiH2 = document.querySelector('#sec-wifi h2');
   if (secWifiH2) secWifiH2.textContent = t('wifiTitle');
-  const miniStats = document.querySelectorAll('#sec-wifi .mini-stat .m-label');
-  if (miniStats[0]) miniStats[0].textContent = t('wifiSignal');
-  if (miniStats[1]) miniStats[1].textContent = t('wifiNoise');
-  if (miniStats[2]) miniStats[2].textContent = t('wifiSnr');
+  if ($('lblWifiRssi')) $('lblWifiRssi').textContent = t('wifiSignal');
+  if ($('lblWifiNoise')) $('lblWifiNoise').textContent = t('wifiNoise');
+  if ($('lblWifiSnr')) $('lblWifiSnr').textContent = t('wifiSnr');
+  if ($('lblNetRouter')) $('lblNetRouter').textContent = t('netRouterLabel');
+  if ($('lblNetDns')) $('lblNetDns').textContent = t('netDnsLabel');
+  if ($('lblNetSession')) $('lblNetSession').textContent = t('netSessionLabel');
 
   const secGpuH2 = document.querySelector('#sec-gpu h2');
   if (secGpuH2) secGpuH2.textContent = t('gpuTitle');
@@ -1244,9 +1286,42 @@ function shortBtName(devItem) {
   return cleaned.length <= 11 ? cleaned : cleaned.slice(0, 10) + '…';
 }
 
-function renderProcIcon(iconDataUrl, name) {
-  if (iconDataUrl && String(iconDataUrl).startsWith('data:image/')) {
-    return `<img class="proc-icon" src="${esc(iconDataUrl)}" alt="" />`;
+const frontendIconCache = new Map();
+let hasCompletedFirstRender = false;
+let lastHeartbeatSentAt = 0;
+let lastTelemetryReceivedAt = Date.now();
+
+function hydrateSnapshotIcons(snap) {
+  if (!snap) return;
+  const hydrateList = (list) => {
+    if (!Array.isArray(list)) return;
+    for (const item of list) {
+      if (!item) continue;
+      const key = item.iconKey || item.name || '';
+      if (item.icon && String(item.icon).startsWith('data:image/')) {
+        if (key) frontendIconCache.set(key, item.icon);
+      } else if (key && frontendIconCache.has(key)) {
+        item.icon = frontendIconCache.get(key);
+      }
+    }
+  };
+  hydrateList(snap.cpu?.topProcesses);
+  hydrateList(snap.memory?.topProcesses);
+  hydrateList(snap.dev?.ports);
+  if (!snap.junk && latestJunkData) snap.junk = latestJunkData;
+  if (!snap.diskUsage && latestDiskUsageData) snap.diskUsage = latestDiskUsageData;
+}
+
+function renderProcIcon(iconDataUrl, name, iconKey = '') {
+  const cacheKey = iconKey || name || '';
+  let resolvedIcon = iconDataUrl;
+  if (resolvedIcon && String(resolvedIcon).startsWith('data:image/')) {
+    if (cacheKey) frontendIconCache.set(cacheKey, resolvedIcon);
+  } else if (cacheKey && frontendIconCache.has(cacheKey)) {
+    resolvedIcon = frontendIconCache.get(cacheKey);
+  }
+  if (resolvedIcon && String(resolvedIcon).startsWith('data:image/')) {
+    return `<img class="proc-icon" src="${esc(resolvedIcon)}" alt="" />`;
   }
   const initial = String(name || '?').replace(/^[^a-zA-Z0-9]+/, '').slice(0, 2).toUpperCase() || '⚙';
   return `<span class="proc-icon-fallback">${esc(initial)}</span>`;
@@ -1343,6 +1418,9 @@ function setProcsSub(sub) {
   currentFilter = 'procs';
   procsSub = sub;
   updateVisibleCards();
+  if (latestTelemetrySnap) {
+    renderTelemetry(latestTelemetrySnap, true);
+  }
   const container = $('cardsContainer');
   if (container) container.scrollTop = 0;
   const rings = $('ringsPanel');
@@ -1379,15 +1457,20 @@ function setActiveTab(target, sub = null) {
     currentFilter = target;
   }
   updateVisibleCards();
+  if (latestTelemetrySnap) {
+    renderTelemetry(latestTelemetrySnap, true);
+  }
   const container = $('cardsContainer');
   if (container) container.scrollTop = 0;
   const rings = $('ringsPanel');
   if (rings) rings.scrollTop = 0;
 }
 
-function renderTelemetry(snap) {
+function renderTelemetry(snap, forceFull = true) {
   if (!snap) return;
+  hydrateSnapshotIcons(snap);
   latestTelemetrySnap = snap;
+  const fullRender = Boolean(forceFull) || !hasCompletedFirstRender;
   $('liveDot').classList.add('ok');
 
   const { cpu, memory, network, wifi, gpu, temps, battery, disk, dev, bluetooth } = snap;
@@ -1508,7 +1591,7 @@ function renderTelemetry(snap) {
   if ($('procsPortsCount')) {
     $('procsPortsCount').textContent = portsList.length;
   }
-  if ($('portsList')) {
+  if ($('portsList') && (fullRender || (currentFilter === 'procs' && procsSub === 'dev'))) {
     if (portsList.length === 0) {
       $('portsList').innerHTML = `<div class="port-empty">${esc(t('portsEmpty'))}</div>`;
     } else {
@@ -1519,7 +1602,7 @@ function renderTelemetry(snap) {
           <div class="proc-row">
             <div class="proc-left">
               <span class="${badgeClass}">:${esc(pt.port)}</span>
-              ${renderProcIcon(pt.icon, pt.name)}
+              ${renderProcIcon(pt.icon, pt.name, pt.iconKey)}
               <span class="proc-name" title="${esc(pt.name)} (PID ${esc(pt.pid)})">${esc(pt.name)}</span>
               <span class="proc-pid">${esc(pt.pid)}</span>
             </div>
@@ -1540,36 +1623,43 @@ function renderTelemetry(snap) {
   $('netUpMain').innerHTML = `${esc(upParts.num)} <small>${esc(upParts.unit)}</small>`;
   $('netDownMbps').textContent = `${(network?.rxMbps || 0).toFixed(2)} Mbps • ${fmtBytes(network?.totalRxBytes || 0, 1)}`;
   $('netUpMbps').textContent = `${(network?.txMbps || 0).toFixed(2)} Mbps • ${fmtBytes(network?.totalTxBytes || 0, 1)}`;
-  $('netPingLabel').textContent = network?.pingMs != null ? `Ping: ${network.pingMs} ms` : 'Ping: ...';
+  const jitTxt = network?.jitterMs != null && network.jitterMs > 0 ? ` (±${network.jitterMs} ms)` : '';
+  $('netPingLabel').textContent = network?.pingMs != null ? `Ping: ${network.pingMs} ms${jitTxt}` : 'Ping: ...';
 
   netDownHistory.push((network?.rxBytesPerSec || 0) / 1024);
   if (netDownHistory.length > HISTORY_LEN) netDownHistory.shift();
   netUpHistory.push((network?.txBytesPerSec || 0) / 1024);
   if (netUpHistory.length > HISTORY_LEN) netUpHistory.shift();
 
-  drawSparkline(
-    $('canvasNet'),
-    [
-      {
-        data: netDownHistory,
-        stroke: '#22c55e',
-        fill: true,
-        fillTop: 'rgba(34, 197, 94, 0.28)',
-      },
-      {
-        data: netUpHistory,
-        stroke: '#38bdf8',
-        fill: false,
-      },
-    ],
-    64
-  );
+  if (fullRender || currentFilter === 'network') {
+    drawSparkline(
+      $('canvasNet'),
+      [
+        {
+          data: netDownHistory,
+          stroke: '#22c55e',
+          fill: true,
+          fillTop: 'rgba(34, 197, 94, 0.28)',
+        },
+        {
+          data: netUpHistory,
+          stroke: '#38bdf8',
+          fill: false,
+        },
+      ],
+      64
+    );
+  }
 
   // 4. Wi-Fi Card
   const qualityLabel = (wifi?.qualityCode && t('wifiQuality_' + wifi.qualityCode)) || wifi?.label || '—';
   const qBadge = $('wifiQualityBadge');
-  qBadge.textContent = wifi?.ssid ? `${wifi.ssid} • ${qualityLabel}` : `${t('wifiQuality')}: ${qualityLabel}`;
+  qBadge.textContent = `${t('wifiQuality')}: ${qualityLabel}`;
   qBadge.className = `card-pill ${wifiPct >= 70 ? 'good' : wifiPct >= 40 ? 'warn' : 'crit'}`;
+
+  if ($('wifiSsidVal')) {
+    $('wifiSsidVal').textContent = wifi?.ssid || (wifi?.rssi ? `Wi-Fi (${wifi.interface || 'en0'})` : t('wifiNone'));
+  }
 
   const barsEl = $('wifiBars');
   if (barsEl) {
@@ -1582,6 +1672,7 @@ function renderTelemetry(snap) {
   $('wifiPctVal').textContent = `${wifiPct}%`;
   $('wifiDbmVal').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
   const bandInfo = [];
+  if (wifi?.phyMode) bandInfo.push(wifi.phyMode);
   if (wifi?.band && wifi.band !== '—') bandInfo.push(wifi.band);
   if (wifi?.channel) bandInfo.push(`${t('wifiChannel')} ${wifi.channel}`);
   if (wifi?.widthMHz) bandInfo.push(`${wifi.widthMHz} MHz`);
@@ -1590,6 +1681,11 @@ function renderTelemetry(snap) {
   $('wifiRssi').textContent = wifi?.rssi ? `${wifi.rssi} dBm` : '-- dBm';
   $('wifiNoise').textContent = wifi?.noise ? `${wifi.noise} dBm` : '-- dBm';
   $('wifiSnr').textContent = wifi?.snr ? `+${wifi.snr} dB` : '-- dB';
+  if ($('netRouterVal')) $('netRouterVal').textContent = network?.router || '—';
+  if ($('netDnsVal')) $('netDnsVal').textContent = network?.dns || '—';
+  if ($('netSessionVal')) {
+    $('netSessionVal').textContent = `${fmtBytes(network?.sessionRxBytes || 0, 0)} / ${fmtBytes(network?.sessionTxBytes || 0, 0)}`;
+  }
 
   // 5. CPU Card & Top 10 CPU Processes
   const coreDesc =
@@ -1605,58 +1701,60 @@ function renderTelemetry(snap) {
 
   cpuHistory.push(cpu?.totalPercent || 0);
   if (cpuHistory.length > HISTORY_LEN) cpuHistory.shift();
-  drawSparkline(
-    $('canvasCpu'),
-    [
-      {
-        data: cpuHistory,
-        stroke: '#60a5fa',
-        fill: true,
-        fillTop: 'rgba(96, 165, 250, 0.3)',
-      },
-    ],
-    100
-  );
+  if (fullRender || (currentFilter === 'procs' && procsSub === 'top-cpu')) {
+    drawSparkline(
+      $('canvasCpu'),
+      [
+        {
+          data: cpuHistory,
+          stroke: '#60a5fa',
+          fill: true,
+          fillTop: 'rgba(96, 165, 250, 0.3)',
+        },
+      ],
+      100
+    );
 
-  if (Array.isArray(cpu?.cores)) {
-    $('coresGrid').innerHTML = cpu.cores
-      .map(
-        (c) => `
-        <div class="core-pill">
-          <div class="core-top">
-            <span class="core-name type-${esc(c.type)}">${esc(c.label)}</span>
-            <span class="core-pct">${esc(c.percent)}%</span>
-          </div>
-          <div class="core-bar-bg">
-            <div class="core-bar-fg type-${esc(c.type)}" style="width: ${Math.min(100, Math.max(0, Number(c.percent) || 0))}%"></div>
-          </div>
-        </div>`
-      )
-      .join('');
-  }
+    if (Array.isArray(cpu?.cores)) {
+      $('coresGrid').innerHTML = cpu.cores
+        .map(
+          (c) => `
+          <div class="core-pill">
+            <div class="core-top">
+              <span class="core-name type-${esc(c.type)}">${esc(c.label)}</span>
+              <span class="core-pct">${esc(c.percent)}%</span>
+            </div>
+            <div class="core-bar-bg">
+              <div class="core-bar-fg type-${esc(c.type)}" style="width: ${Math.min(100, Math.max(0, Number(c.percent) || 0))}%"></div>
+            </div>
+          </div>`
+        )
+        .join('');
+    }
 
-  if (Array.isArray(cpu?.topProcesses) && $('topCpuList')) {
-    const maxCpu = Math.max(20, ...(cpu.topProcesses.map((p) => Number(p.cpuPercent) || 0)));
-    $('topCpuList').innerHTML = cpu.topProcesses
-      .map((p) => {
-        const barW = Math.min(100, Math.max(2, ((Number(p.cpuPercent) || 0) / maxCpu) * 100));
-        return `
-        <div class="proc-row">
-          <div class="proc-bar-bg cpu-bar" style="width: ${barW.toFixed(1)}%"></div>
-          <div class="proc-left">
-            <span class="proc-rank">#${esc(p.rank)}</span>
-            ${renderProcIcon(p.icon, p.name)}
-            <span class="proc-name" title="${esc(p.name)} (PID ${esc(p.pid)})">${esc(p.name)}</span>
-            <span class="proc-pid">${esc(p.pid)}</span>
-          </div>
-          <div class="proc-right">
-            <span class="proc-sub">${esc(fmtBytes(p.memBytes, 0))}</span>
-            <span class="proc-primary cpu-val">${esc(Number(p.cpuPercent || 0).toFixed(1))}%</span>
-            <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="${esc(t('killProcTitle', p.name, p.pid))}">✕</button>
-          </div>
-        </div>`;
-      })
-      .join('');
+    if (Array.isArray(cpu?.topProcesses) && $('topCpuList')) {
+      const maxCpu = Math.max(20, ...(cpu.topProcesses.map((p) => Number(p.cpuPercent) || 0)));
+      $('topCpuList').innerHTML = cpu.topProcesses
+        .map((p) => {
+          const barW = Math.min(100, Math.max(2, ((Number(p.cpuPercent) || 0) / maxCpu) * 100));
+          return `
+          <div class="proc-row">
+            <div class="proc-bar-bg cpu-bar" style="width: ${barW.toFixed(1)}%"></div>
+            <div class="proc-left">
+              <span class="proc-rank">#${esc(p.rank)}</span>
+              ${renderProcIcon(p.icon, p.name, p.iconKey)}
+              <span class="proc-name" title="${esc(p.name)} (PID ${esc(p.pid)})">${esc(p.name)}</span>
+              <span class="proc-pid">${esc(p.pid)}</span>
+            </div>
+            <div class="proc-right">
+              <span class="proc-sub">${esc(fmtBytes(p.memBytes, 0))}</span>
+              <span class="proc-primary cpu-val">${esc(Number(p.cpuPercent || 0).toFixed(1))}%</span>
+              <button class="proc-kill-btn" type="button" data-kill-pid="${esc(p.pid)}" data-kill-name="${esc(p.name)}" title="${esc(t('killProcTitle', p.name, p.pid))}">✕</button>
+            </div>
+          </div>`;
+        })
+        .join('');
+    }
   }
 
   // 6. Memory (RAM) Card & Top 10 RAM Processes
@@ -1690,7 +1788,7 @@ function renderTelemetry(snap) {
   $('ramWiredVal').textContent = fmtGB(memory?.wired || 0, 1);
   $('ramCompVal').textContent = fmtGB(memory?.compressed || 0, 1);
 
-  if (Array.isArray(memory?.topProcesses) && $('topRamList')) {
+  if (Array.isArray(memory?.topProcesses) && $('topRamList') && (fullRender || (currentFilter === 'procs' && procsSub === 'top-ram'))) {
     const maxMem = Math.max(1, ...(memory.topProcesses.map((p) => Number(p.memBytes) || 0)));
     $('topRamList').innerHTML = memory.topProcesses
       .map((p) => {
@@ -1700,7 +1798,7 @@ function renderTelemetry(snap) {
           <div class="proc-bar-bg ram-bar" style="width: ${barW.toFixed(1)}%"></div>
           <div class="proc-left">
             <span class="proc-rank">#${esc(p.rank)}</span>
-            ${renderProcIcon(p.icon, p.name)}
+            ${renderProcIcon(p.icon, p.name, p.iconKey)}
             <span class="proc-name" title="${esc(p.name)} (PID ${esc(p.pid)})">${esc(p.name)}</span>
             <span class="proc-pid">${esc(p.pid)}</span>
           </div>
@@ -1785,7 +1883,7 @@ function renderTelemetry(snap) {
   if ($('btDevicesCountLabel')) {
     $('btDevicesCountLabel').textContent = t('battBtHeader', btList.length);
   }
-  if ($('btDevicesList')) {
+  if ($('btDevicesList') && (fullRender || currentFilter === 'sensors')) {
     if (btList.length === 0) {
       $('btDevicesList').innerHTML = `<div class="port-empty">${esc(t('battBtEmpty'))}</div>`;
     } else {
@@ -1826,7 +1924,7 @@ function renderTelemetry(snap) {
     $('diskPurgeableFill').style.width = `${purgeBarPct.toFixed(1)}%`;
   }
 
-  if ($('volumesList')) {
+  if ($('volumesList') && (fullRender || currentFilter === 'disk')) {
     const vols = Array.isArray(disk?.volumes) ? disk.volumes : [];
     $('volumesList').innerHTML = vols
       .map((v) => {
@@ -1926,12 +2024,13 @@ function renderTelemetry(snap) {
     updateAutostartUI(snap.autostart, snap.autostartRequiresApproval);
   }
 
-  if (snap.junk) {
+  if (snap.junk && (fullRender || snap.junk !== latestJunkData)) {
     renderJunkCleaner(snap.junk);
   }
-  if (snap.diskUsage && !isScanningDiskUsageUI) {
+  if (snap.diskUsage && !isScanningDiskUsageUI && (fullRender || snap.diskUsage !== latestDiskUsageData)) {
     renderDiskUsage(snap.diskUsage);
   }
+  hasCompletedFirstRender = true;
 }
 
 async function triggerDiskUsageScan(targetPath = '') {
@@ -2301,7 +2400,34 @@ $('cardsContainer')?.addEventListener('click', async (ev) => {
   }
 });
 
-// Speedtest button & progress events
+// Speedtest mode selector, button & progress events
+let selectedSpeedtestMode = 'standard';
+let lastSpeedtestResult = null;
+
+function renderSpeedtestDone(statusEl, res) {
+  if (!statusEl || !res) return;
+  const peakVal = res.peak || res.mbps;
+  const jitStr = res.jit != null ? `±${esc(res.jit)} ms` : '—';
+  statusEl.innerHTML = `
+    <div class="st-res-row">
+      <span><span class="st-res-speed">↓ ${esc(res.mbps)} Mbps</span> <span class="st-res-mb">(${esc(res.mBps)} MB/s)</span></span>
+      <span class="st-res-peak">Peak: <b>${esc(peakVal)} Mbps</b></span>
+    </div>
+    <div class="st-res-row st-res-sub">
+      <span>⚡ Ping: <b>${esc(res.lat)} ms</b></span>
+      <span>📊 Jitter: <b>${jitStr}</b></span>
+    </div>`;
+}
+
+$('speedtestModes')?.addEventListener('click', (ev) => {
+  const pill = ev.target.closest('[data-st-mode]');
+  if (!pill) return;
+  selectedSpeedtestMode = pill.dataset.stMode || 'standard';
+  document.querySelectorAll('#speedtestModes .st-mode-pill').forEach((el) => {
+    el.classList.toggle('active', el.dataset.stMode === selectedSpeedtestMode);
+  });
+});
+
 $('btnSpeedtest')?.addEventListener('click', async () => {
   const btn = $('btnSpeedtest');
   btn.disabled = true;
@@ -2309,7 +2435,7 @@ $('btnSpeedtest')?.addEventListener('click', async () => {
   $('speedtestTrack').hidden = false;
   $('speedtestFill').style.width = '5%';
   try {
-    await tiny.api.call('runSpeedtest');
+    await tiny.api.call('runSpeedtest', { mode: selectedSpeedtestMode });
   } finally {
     btn.disabled = false;
     btn.textContent = t('speedtestBtn');
@@ -2321,16 +2447,23 @@ tiny.api.on('speedtest-progress', (info) => {
   const statusEl = $('speedtestStatus');
   if (statusEl) {
     if (info.phase === 'ping') {
+      delete statusEl.dataset.hasResult;
       statusEl.textContent = t('speedtestMeasuringPing');
     } else if (info.phase === 'download') {
+      delete statusEl.dataset.hasResult;
       const mbps = typeof info.downloadMbps === 'number' ? info.downloadMbps.toFixed(1) : '...';
-      statusEl.textContent = t('speedtestDownloading', mbps);
+      statusEl.textContent = t('speedtestDownloading', mbps, info.remainingSec);
     } else if (info.phase === 'done') {
       const mbps = (Number(info.downloadMbps) || 0).toFixed(1);
       const mBps = (Number(info.downloadMBps) || 0).toFixed(1);
+      const peak = info.peakMbps ? Number(info.peakMbps).toFixed(1) : mbps;
       const lat = info.latencyMs || 0;
-      statusEl.textContent = t('speedtestDoneResult', mbps, mBps, lat);
+      const jit = info.jitterMs != null ? info.jitterMs : null;
+      lastSpeedtestResult = { mbps, mBps, lat, jit, peak };
+      statusEl.dataset.hasResult = '1';
+      renderSpeedtestDone(statusEl, lastSpeedtestResult);
     } else if (info.phase === 'error') {
+      delete statusEl.dataset.hasResult;
       statusEl.textContent = t('speedtestError', info.error || 'HTTP Error');
     } else if (info.message) {
       statusEl.textContent = info.message;
@@ -3153,19 +3286,68 @@ async function boot() {
   });
 
   tiny.api.on('telemetry', (snap) => {
-    renderTelemetry(snap);
+    if (!snap) return;
+    const now = Date.now();
+    lastTelemetryReceivedAt = now;
+    hydrateSnapshotIcons(snap);
+    latestTelemetrySnap = snap;
+
+    if (now - lastHeartbeatSentAt > 4000) {
+      lastHeartbeatSentAt = now;
+      tiny.api.call('uiHeartbeat', { visible: !document.hidden }).catch(() => {});
+    }
+
+    if (document.hidden && hasCompletedFirstRender) {
+      netDownHistory.push((snap.network?.rxBytesPerSec || 0) / 1024);
+      if (netDownHistory.length > HISTORY_LEN) netDownHistory.shift();
+      netUpHistory.push((snap.network?.txBytesPerSec || 0) / 1024);
+      if (netUpHistory.length > HISTORY_LEN) netUpHistory.shift();
+      cpuHistory.push(snap.cpu?.totalPercent || 0);
+      if (cpuHistory.length > HISTORY_LEN) cpuHistory.shift();
+      return;
+    }
+
+    renderTelemetry(snap, false);
   });
 
+  document.addEventListener('visibilitychange', () => {
+    const vis = !document.hidden;
+    tiny.api.call('setUiVisibility', { visible: vis }).catch(() => {});
+    if (vis && latestTelemetrySnap) {
+      renderTelemetry(latestTelemetrySnap, true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    tiny.api.call('uiHeartbeat', { visible: true }).catch(() => {});
+    if (latestTelemetrySnap) {
+      renderTelemetry(latestTelemetrySnap, true);
+    }
+  });
+
+  tiny.api.call('uiHello', { visible: !document.hidden }).catch(() => {});
   tiny.api.call('setTooltipsState', { enabled: tooltipsEnabled }).catch(() => {});
 
   setLanguage(currentLang);
   updateVisibleCards();
   try {
     const snap = await tiny.api.call('getSnapshot');
-    renderTelemetry(snap);
+    renderTelemetry(snap, true);
   } catch (err) {
     console.error('Initial snapshot error:', err);
   }
+
+  setInterval(() => {
+    tiny.api.call('uiHeartbeat', { visible: !document.hidden }).catch(() => {});
+    if (!document.hidden && Date.now() - lastTelemetryReceivedAt > 6000) {
+      tiny.api
+        .call('getSnapshot')
+        .then((snap) => {
+          if (snap) renderTelemetry(snap, true);
+        })
+        .catch(() => {});
+    }
+  }, 5000);
 }
 
 boot().catch((err) => {

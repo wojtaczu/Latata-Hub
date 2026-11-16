@@ -63,9 +63,9 @@ html, body {
   align-items: center;
   justify-content: space-between;
   height: 32px;
-  padding: 4px 10px 0 12px;
+  padding: 4px 10px 0 10px;
   flex-shrink: 0;
-  gap: 4px;
+  gap: 8px;
 }
 
 .titlebar-left {
@@ -92,7 +92,7 @@ html, body {
 
 .app-title {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11.5px;
   letter-spacing: -0.01em;
   color: var(--text-main);
   white-space: nowrap;
@@ -107,16 +107,16 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2.5px;
   height: 19px;
-  padding: 0 6px;
+  padding: 0 5px;
   border-radius: 99px;
   border: 1px solid rgba(147, 197, 253, 0.28);
   background: rgba(147, 197, 253, 0.08);
   color: #93c5fd;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
@@ -143,25 +143,29 @@ html, body {
 .titlebar-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3.5px;
   flex-shrink: 0;
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  height: 20px;
-  padding: 0 6px;
+  gap: 2.5px;
+  height: 19px;
+  padding: 0 5.5px;
   border-radius: 99px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.icon-btn.icon-only {
+  padding: 0 5px;
 }
 
 .icon-btn:hover {
@@ -180,7 +184,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 3px 6px 4px 6px;
+  padding: 3px 10px 4px 10px;
   background: rgba(14, 18, 27, 0.75);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
@@ -197,8 +201,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 3.5px 2px;
+  gap: 2.5px;
+  padding: 3.5px 5px;
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
@@ -208,7 +212,7 @@ html, body {
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s ease;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
   text-align: center;
   overflow: hidden;
@@ -278,7 +282,7 @@ html, body {
 .rings-panel {
   display: flex;
   flex-direction: column;
-  padding: 5px 11px 12px 11px;
+  padding: 5px 10px 12px 10px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -472,11 +476,22 @@ html, body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 11px 11px 11px;
+  padding: 6px 10px 11px 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   -webkit-overflow-scrolling: touch;
+}
+
+.cards-container::-webkit-scrollbar {
+  width: 4px;
+}
+.cards-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cards-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
 }
 
 .cards-container.hidden-for-dashboard {
@@ -915,28 +930,110 @@ html, body {
 /* Speedtest Bar */
 .speedtest-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 8px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 8px;
   border-radius: 8px;
   background: rgba(56, 189, 248, 0.08);
   border: 1px solid rgba(56, 189, 248, 0.22);
 }
 
+.speedtest-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.speedtest-modes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 6px;
+  background: rgba(8, 12, 19, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.st-mode-pill {
+  padding: 2.5px 6px;
+  border-radius: 4.5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.st-mode-pill:hover {
+  color: var(--text-primary);
+}
+
+.st-mode-pill.active {
+  background: rgba(56, 189, 248, 0.22);
+  color: #e0f2fe;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.2);
+}
+
 .speedtest-info {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
 .speedtest-status {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   font-family: var(--font-mono);
   font-size: 10px;
+  line-height: 1.35;
   color: #bae6fd;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.st-res-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+.st-res-speed {
+  color: #6ee7b7;
+  font-weight: 700;
+  font-size: 10.5px;
+}
+
+.st-res-mb {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 9.5px;
+}
+
+.st-res-peak {
+  color: #93c5fd;
+  font-size: 9.5px;
+}
+
+.st-res-peak b {
+  color: #e0f2fe;
+  font-weight: 700;
+}
+
+.st-res-sub {
+  font-size: 9.5px;
+  color: var(--text-secondary);
+  padding-top: 2.5px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.09);
+}
+
+.st-res-sub b {
+  color: #e0f2fe;
+  font-weight: 600;
 }
 
 .speedtest-prog-track {
@@ -1012,6 +1109,17 @@ html, body {
 
 .wifi-primary-metrics {
   flex: 1;
+  min-width: 0;
+}
+
+.wifi-ssid-line {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #7dd3fc;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wifi-big-pct {
@@ -1532,11 +1640,11 @@ html, body {
 .tooltip-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  height: 20px;
-  padding: 0 6px 0 5px;
+  gap: 2px;
+  height: 19px;
+  padding: 0 5.5px 0 4.5px;
   border-radius: 99px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;

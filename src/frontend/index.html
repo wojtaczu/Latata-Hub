@@ -482,13 +482,20 @@
         </div>
 
         <div class="speedtest-bar">
+          <div class="speedtest-top-row">
+            <div class="speedtest-modes" id="speedtestModes">
+              <button type="button" class="st-mode-pill" data-st-mode="quick" id="stModeQuick" title="Szybki test (próbka 15 MB)">⚡ Szybki</button>
+              <button type="button" class="st-mode-pill active" data-st-mode="standard" id="stModeStandard" title="Standardowy test (próbka 50 MB)">⚖️ Standard</button>
+              <button type="button" class="st-mode-pill" data-st-mode="long" id="stModeLong" title="Długi test stabilności łącza (15 sekund pełnego obciążenia)">🔥 15s</button>
+            </div>
+            <button class="action-btn" id="btnSpeedtest">Testuj łącze</button>
+          </div>
           <div class="speedtest-info">
             <span class="speedtest-status" id="speedtestStatus">Speedtest Cloudflare gotowy</span>
             <div class="speedtest-prog-track" id="speedtestTrack" hidden>
               <div class="speedtest-prog-fill" id="speedtestFill" style="width: 0%"></div>
             </div>
           </div>
-          <button class="action-btn" id="btnSpeedtest">Testuj łącze</button>
         </div>
       </article>
 
@@ -511,6 +518,7 @@
             <span class="w-bar b5"></span>
           </div>
           <div class="wifi-primary-metrics">
+            <div class="wifi-ssid-line" id="wifiSsidLine">📶 <span id="wifiSsidVal">—</span></div>
             <div class="wifi-big-pct"><span id="wifiPctVal">0%</span> <small id="wifiDbmVal">-- dBm</small></div>
             <div class="wifi-band-line" id="wifiBandLine">Pasmo — • Kanał —</div>
           </div>
@@ -522,16 +530,31 @@
 
         <div class="metrics-mini-grid cols-3">
           <div class="mini-stat">
-            <span class="m-label">Sygnał (RSSI)</span>
+            <span class="m-label" id="lblWifiRssi">Sygnał (RSSI)</span>
             <span class="m-val" id="wifiRssi">-- dBm</span>
           </div>
           <div class="mini-stat">
-            <span class="m-label">Szum (Noise)</span>
+            <span class="m-label" id="lblWifiNoise">Szum (Noise)</span>
             <span class="m-val" id="wifiNoise">-- dBm</span>
           </div>
           <div class="mini-stat">
-            <span class="m-label">Odstęp SNR</span>
+            <span class="m-label" id="lblWifiSnr">Odstęp SNR</span>
             <span class="m-val" id="wifiSnr">-- dB</span>
+          </div>
+        </div>
+
+        <div class="metrics-mini-grid cols-3" style="margin-top: 5px;">
+          <div class="mini-stat">
+            <span class="m-label" id="lblNetRouter">Brama (Router)</span>
+            <span class="m-val" id="netRouterVal">—</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label" id="lblNetDns">Serwer DNS</span>
+            <span class="m-val" id="netDnsVal">—</span>
+          </div>
+          <div class="mini-stat">
+            <span class="m-label" id="lblNetSession">Sesja (↓ / ↑)</span>
+            <span class="m-val" id="netSessionVal">0 B / 0 B</span>
           </div>
         </div>
       </article>
